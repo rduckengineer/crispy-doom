@@ -3139,6 +3139,9 @@ boolean G_CheckDemoStatus (void)
         timingdemo = false;
         demoplayback = false;
 
+        G_SaveGame(9, "test_result");
+        G_DoSaveGame();
+
 	I_Error ("timed %i gametics in %i realtics (%f fps)",
                  gametic, realtics, fps);
     } 
