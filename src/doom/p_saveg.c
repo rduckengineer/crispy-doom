@@ -187,7 +187,7 @@ static void *saveg_readp(void)
 
 static void saveg_writep(const void *p)
 {
-    saveg_write32((intptr_t) p);
+    saveg_write32((intptr_t) NULL);
 }
 
 // Enum values are 32-bit integers.
