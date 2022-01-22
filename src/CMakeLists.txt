@@ -6,7 +6,6 @@ endforeach()
 
 set(COMMON_SOURCE_FILES
     crispy.c             crispy.h
-    i_main.c
     i_system.c           i_system.h
     m_argv.c             m_argv.h
     m_misc.c             m_misc.h)
@@ -132,14 +131,18 @@ if(PNG_FOUND)
     list(APPEND EXTRA_LIBS PNG::PNG)
 endif()
 
+add_library(common STATIC ${SOURCE_FILES_WITH_DEH})
+target_include_directories(common PRIVATE ${GAME_INCLUDE_DIRS})
+target_link_libraries(common doom ${EXTRA_LIBS})
+
 if(WIN32)
-    add_executable("${PROGRAM_PREFIX}doom" WIN32 ${SOURCE_FILES_WITH_DEH} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
+    add_executable("${PROGRAM_PREFIX}doom" WIN32 i_main.c ${SOURCE_FILES_WITH_DEH} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
 else()
-    add_executable("${PROGRAM_PREFIX}doom" ${SOURCE_FILES_WITH_DEH})
+    add_executable("${PROGRAM_PREFIX}doom" i_main.c ${SOURCE_FILES_WITH_DEH})
 endif()
 
 target_include_directories("${PROGRAM_PREFIX}doom" PRIVATE ${GAME_INCLUDE_DIRS})
-target_link_libraries("${PROGRAM_PREFIX}doom" doom ${EXTRA_LIBS})
+target_link_libraries("${PROGRAM_PREFIX}doom" doom ${EXTRA_LIBS} common)
 
 if(MSVC)
     set_target_properties("${PROGRAM_PREFIX}doom" PROPERTIES
