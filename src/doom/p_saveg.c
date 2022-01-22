@@ -94,17 +94,21 @@ static byte saveg_read8(void)
     return result;
 }
 
-static void saveg_write8(byte value)
+void saveg_write8_in_stream(FILE* stream, byte value, boolean * error)
 {
-    if (fwrite(&value, 1, 1, save_stream) < 1)
+    if (fwrite(&value, 1, 1, stream) < 1)
     {
-        if (!savegame_error)
+        if (!*error)
         {
             fprintf(stderr, "saveg_write8: Error while writing save game\n");
 
-            savegame_error = true;
+            *error = true;
         }
     }
+}
+
+static void saveg_write8(byte value) {
+  saveg_write8_in_stream(save_stream, value, &savegame_error);
 }
 
 static short saveg_read16(void)
