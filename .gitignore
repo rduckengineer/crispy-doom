@@ -28,10 +28,12 @@ DOOM*.pcx
 HTIC*.pcx
 HEXEN*.pcx
 STRIFE*.pcx
+*.WAD
 
 # CMake-specific ignores
 /.vs
 /build*
+/cmake-build*
 /CMakeSettings.json
 /out
 
