@@ -29,7 +29,7 @@ set(DEDSERV_FILES
     net_structrw.c      net_structrw.h
     z_native.c          z_zone.h)
 
-add_executable("${PROGRAM_PREFIX}server" WIN32 ${COMMON_SOURCE_FILES} ${DEDSERV_FILES})
+add_executable("${PROGRAM_PREFIX}server" WIN32 i_main.c ${COMMON_SOURCE_FILES} ${DEDSERV_FILES})
 target_include_directories("${PROGRAM_PREFIX}server"
                            PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../")
 target_link_libraries("${PROGRAM_PREFIX}server" SDL2::SDL2main SDL2::net)
@@ -153,9 +153,9 @@ if(MSVC)
 endif()
 
 if(WIN32)
-    add_executable("${PROGRAM_PREFIX}heretic" WIN32 ${SOURCE_FILES_WITH_DEH} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
+    add_executable("${PROGRAM_PREFIX}heretic" WIN32 i_main.c ${SOURCE_FILES_WITH_DEH} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
 else()
-    add_executable("${PROGRAM_PREFIX}heretic" ${SOURCE_FILES_WITH_DEH})
+    add_executable("${PROGRAM_PREFIX}heretic" i_main.c ${SOURCE_FILES_WITH_DEH})
 endif()
 
 target_include_directories("${PROGRAM_PREFIX}heretic" PRIVATE ${GAME_INCLUDE_DIRS})
@@ -167,9 +167,9 @@ if(MSVC)
 endif()
 
 if(WIN32)
-    add_executable("${PROGRAM_PREFIX}hexen" WIN32 ${SOURCE_FILES} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
+    add_executable("${PROGRAM_PREFIX}hexen" WIN32 i_main.c ${SOURCE_FILES} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
 else()
-    add_executable("${PROGRAM_PREFIX}hexen" ${SOURCE_FILES})
+    add_executable("${PROGRAM_PREFIX}hexen" i_main.c ${SOURCE_FILES})
 endif()
 
 target_include_directories("${PROGRAM_PREFIX}hexen" PRIVATE ${GAME_INCLUDE_DIRS})
@@ -181,9 +181,9 @@ if(MSVC)
 endif()
 
 if(WIN32)
-    add_executable("${PROGRAM_PREFIX}strife" WIN32 ${SOURCE_FILES_WITH_DEH} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
+    add_executable("${PROGRAM_PREFIX}strife" WIN32 i_main.c ${SOURCE_FILES_WITH_DEH} "${CMAKE_CURRENT_BINARY_DIR}/resource.rc")
 else()
-    add_executable("${PROGRAM_PREFIX}strife" ${SOURCE_FILES_WITH_DEH})
+    add_executable("${PROGRAM_PREFIX}strife" i_main.c ${SOURCE_FILES_WITH_DEH})
 endif()
 
 target_include_directories("${PROGRAM_PREFIX}strife" PRIVATE ${GAME_INCLUDE_DIRS})
@@ -212,9 +212,9 @@ set(SETUP_FILES
     z_native.c          z_zone.h)
 
 if(WIN32)
-    add_executable("${PROGRAM_PREFIX}setup" WIN32 ${SETUP_FILES} ${COMMON_SOURCE_FILES} "${CMAKE_CURRENT_BINARY_DIR}/setup-res.rc")
+    add_executable("${PROGRAM_PREFIX}setup" WIN32 i_main.c ${SETUP_FILES} ${COMMON_SOURCE_FILES} "${CMAKE_CURRENT_BINARY_DIR}/setup-res.rc")
 else()
-    add_executable("${PROGRAM_PREFIX}setup" ${SETUP_FILES} ${COMMON_SOURCE_FILES})
+    add_executable("${PROGRAM_PREFIX}setup" i_main.c ${SETUP_FILES} ${COMMON_SOURCE_FILES})
 endif()
 
 target_include_directories("${PROGRAM_PREFIX}setup"
