@@ -3,7 +3,7 @@ add_executable(doom_tests
         savegame_test.cpp
 )
 
-#set_target_properties(doom_tests PROPERTIES LINKER_LANGUAGE CXX)
+add_test(NAME savegame_tests COMMAND doom_tests)
 
 target_include_directories(doom_tests PRIVATE ..)
 target_include_directories(doom_tests PRIVATE ../..)
