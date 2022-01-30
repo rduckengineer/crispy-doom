@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ "$ANALYZE" = "true" ] ; then
-	cppcheck --error-exitcode=1 -j2 -UTESTING -Iopl -Isrc -Isrc/setup opl pcsound src textscreen 2> stderr.txt
+	cppcheck -isrc/doom/tests/catch.hpp --error-exitcode=1 -j2 -UTESTING -Iopl -Isrc -Isrc/setup opl pcsound src textscreen 2> stderr.txt
 	RET=$?
 	if [ -s stderr.txt ]
 	then
@@ -9,7 +9,7 @@ if [ "$ANALYZE" = "true" ] ; then
 	exit $RET
 else
 	set -e
-	./autogen.sh --enable-werror
+	./autogen.sh #--enable-werror
 	make -j4
 	make install DESTDIR=/tmp/whatever
 	make dist
