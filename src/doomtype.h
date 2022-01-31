@@ -99,13 +99,21 @@
 // standard and defined to include stdint.h, so include this. 
 
 #include <inttypes.h>
-#include <stdbool.h>
 
 #if defined(__cplusplus) || defined(__bool_true_false_are_defined)
 
-// Use builtin bool type with C++.
+// This struct emulates the C behavior where boolean is a 4-byte enum
+// Somehow, if it is indeed a bool, even in C, there are regressions in the game
+// TODO: figure out what is going on here
+struct alignas(4) boolean
+{
+   bool b {};
+   char padding[3]{};
 
-typedef bool boolean;
+  boolean(bool b_) : b(b_) {}
+  boolean& operator=(bool b_) { b = b_; return *this; }
+  operator bool() const { return b; }
+};
 
 #else
 
