@@ -7,7 +7,7 @@ extern "C" {
 #include "p_saveg.h"
 }
 
-static_assert(sizeof(boolean) == sizeof(byte));
+static_assert(sizeof(boolean) == sizeof(int32_t));
 
 namespace {
 auto openFileRead(std::array<byte, 2> &buffer) -> std::unique_ptr<FILE, decltype(&fclose)>;
