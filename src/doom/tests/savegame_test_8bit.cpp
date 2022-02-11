@@ -5,6 +5,8 @@ extern "C" {
 
 #include "file_stream.hpp"
 
+#include "savegame/savegame.hpp"
+
 #include "catch.hpp"
 
 static_assert(sizeof(boolean) == sizeof(int32_t));
@@ -19,15 +21,15 @@ SCENARIO("Writing 8 bits in a file", "[write]") {
 
     AND_GIVEN("No prior error")
     {
-      boolean err = false;
+      SaveGame saveg{file_stream.file(), false, error_stream.file()};
 
       WHEN("Writing 8 bits in the stream")
       {
-        saveg_write8_from_context({file_stream.file(), &err, error_stream.file()}, 0x43);
+        saveg.write8(0x43);
 
         THEN("There is no error after the write and the written value is correct")
         {
-          CHECK(err == false);
+          CHECK_FALSE(saveg.error());
           CHECK(file_stream[0] == 0x43);
         }
       }
@@ -35,14 +37,14 @@ SCENARIO("Writing 8 bits in a file", "[write]") {
 
     AND_GIVEN("A prior error")
     {
-      boolean err = true;
+      SaveGame saveg{file_stream.file(), true, error_stream.file()};
       WHEN("Writing 8 bits in the stream")
       {
-        saveg_write8_from_context({file_stream.file(), &err, error_stream.file()}, 0x43);
+        saveg.write8(0x43);
 
         THEN("There is still an error after writing and the value was written")
         {
-          CHECK(err == true);
+          CHECK(saveg.error());
           CHECK(file_stream[0] == 0x43);
         }
       }
@@ -58,17 +60,17 @@ SCENARIO("Writing 8 bits in a file fails", "[write]") {
 
     AND_GIVEN("No prior error")
     {
-      boolean err = false;
+      SaveGame saveg{file_stream.file(), false, error_stream.file()};
       WHEN("Writing 8 bits in the stream")
       {
-        saveg_write8_from_context({file_stream.file(), &err, error_stream.file()}, 0x42);
+        saveg.write8(0x42);
 
         THEN("There is an error after the write")
         {
           REQUIRE_FALSE(error_stream.has_error());
           CHECK(error_stream.str() == "saveg_write8: Error while writing save game\n");
           CHECK(file_stream.has_error());
-          CHECK(err == true);
+          CHECK(saveg.error() == true);
           AND_THEN("The file has not been modified")
           {
             CHECK(file_stream[0] == 0);
@@ -89,15 +91,14 @@ SCENARIO("Reading 8 bits in a file", "[read]") {
 
     AND_GIVEN("No prior error")
     {
-      boolean err = false;
+      SaveGame saveg{file_stream.file(), false, error_stream.file()};
       WHEN("Reading 8 bits in the stream")
       {
-        byte result =
-            saveg_read8_from_context({file_stream.file(), &err, error_stream.file()});
+        byte result = saveg.read8();
 
         THEN("There is no error after reading and the result variable has been set with the correct value")
         {
-          CHECK(err == false);
+          CHECK_FALSE(saveg.error());
           CHECK(result == 0x13);
         }
       }
@@ -105,16 +106,17 @@ SCENARIO("Reading 8 bits in a file", "[read]") {
 
     AND_GIVEN("A prior error")
     {
-      boolean err = true;
+      SaveGame saveg{file_stream.file(), true, error_stream.file()};
+
       WHEN("Reading 8 bits in the stream")
       {
-        byte result = saveg_read8_from_context({file_stream.file(), &err, error_stream.file()});
+        byte result = saveg.read8();
 
         THEN("There is an error after the reading and the result variable has been set with the correct value")
         {
           REQUIRE_FALSE(error_stream.has_error());
           CHECK(error_stream.str().empty());
-          CHECK(err == true);
+          CHECK(saveg.error());
           CHECK(result == 0x13);
         }
       }
@@ -131,9 +133,11 @@ SCENARIO("Reading 8 bits in a file with an error", "[read]") {
     AND_GIVEN("No prior error")
     {
       boolean err = false;
+      SaveGameContext context{file_stream.file(), &err, error_stream.file()};
+      SaveGame saveg{context};
       WHEN("Reading 8 bits in the stream")
       {
-        byte result = saveg_read8_from_context({file_stream.file(), &err, error_stream.file()});
+        byte result = saveg.read8();
         THEN("There is an error after the reading and the result is -1")
         {
           REQUIRE_FALSE(error_stream.has_error());

@@ -3,6 +3,8 @@ extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 
+
+
 byte saveg_read8_from_context(SaveGameContext context)
 {
   byte result = -1;
@@ -21,7 +23,7 @@ byte saveg_read8_from_context(SaveGameContext context)
   return result;
 }
 
-void  saveg_write8_from_context  (SaveGameContext context, byte value)
+void  saveg_write8_from_context(SaveGameContext context, byte value)
 {
   if (fwrite(&value, 1, 1, context.stream) < 1)
   {
@@ -44,7 +46,7 @@ int16_t saveg_read16_from_context(SaveGameContext context)
   return result;
 }
 
-void  saveg_write16_from_context  (SaveGameContext context, int16_t value)
+void  saveg_write16_from_context(SaveGameContext context, int16_t value)
 {
   saveg_write8_from_context(context, value & 0xff);
   saveg_write8_from_context(context, ((value >> 8) & 0xff));
@@ -63,7 +65,7 @@ int32_t saveg_read32_from_context(SaveGameContext context)
   return result;
 }
 
-void  saveg_write32_from_context  (SaveGameContext context, int32_t value)
+void  saveg_write32_from_context(SaveGameContext context, int32_t value)
 {
   saveg_write8_from_context(context, value & 0xff);
   saveg_write8_from_context(context, (value >> 8) & 0xff);
