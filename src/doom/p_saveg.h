@@ -62,7 +62,7 @@ void P_RestoreTargets (void);
 extern FILE *save_stream;
 extern boolean savegame_error;
 
-void  saveg_write8_in_stream  (FILE* stream, byte value , boolean* error);
-byte  saveg_read8_in_stream   (FILE* stream, boolean* error);
+void  saveg_write8_in_stream  (FILE* stream, byte value , boolean* error, FILE* error_stream);
+byte  saveg_read8_in_stream   (FILE* stream, boolean* error, FILE* error_stream);
 
 #endif
