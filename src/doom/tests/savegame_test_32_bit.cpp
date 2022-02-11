@@ -19,7 +19,7 @@ SCENARIO("Writing 32 bits in a file", "[write]") {
 
       WHEN("Writing 32 bits in the stream")
       {
-        saveg_write32_in_stream(file_stream.file(), 0x4364, &err, error_stream.file());
+        saveg_write32_from_context({file_stream.file(), &err, error_stream.file()}, 0x4364);
 
         THEN("There is no error after the write and the written value is correct")
         {
@@ -35,7 +35,7 @@ SCENARIO("Writing 32 bits in a file", "[write]") {
       boolean err = true;
       WHEN("Writing 32 bits in the stream")
       {
-        saveg_write32_in_stream(file_stream.file(), 0x4364, &err, error_stream.file());
+        saveg_write32_from_context({file_stream.file(), &err, error_stream.file()}, 0x4364);
 
         THEN("There is still an error after writing and the value was written")
         {
@@ -59,7 +59,7 @@ SCENARIO("Writing 32 bits in a file fails", "[write]") {
       boolean err = false;
       WHEN("Writing 32 bits in the stream")
       {
-        saveg_write32_in_stream(file_stream.file(), 0x42, &err, error_stream.file());
+        saveg_write32_from_context({file_stream.file(), &err, error_stream.file()}, 0x4364);
 
         THEN("There is an error after the write")
         {
@@ -91,13 +91,13 @@ SCENARIO("Reading 32 bits in a file", "[read]") {
       boolean err = false;
       WHEN("Reading 32 bits in the stream")
       {
-        int16_t result =
-            saveg_read32_in_stream(file_stream.file(), &err, error_stream.file());
+        int32_t result =
+            saveg_read32_from_context({file_stream.file(), &err, error_stream.file()});
 
         THEN("There is no error after reading and the result variable has been set with the correct value")
         {
           CHECK(err == false);
-          CHECK(result == 0x3713);
+          CHECK(result == 0x00423713);
         }
       }
     }
@@ -107,14 +107,14 @@ SCENARIO("Reading 32 bits in a file", "[read]") {
       boolean err = true;
       WHEN("Reading 32 bits in the stream")
       {
-        int16_t result = saveg_read32_in_stream(file_stream.file(), &err, error_stream.file());
+        int32_t result = saveg_read32_from_context({file_stream.file(), &err, error_stream.file()});
 
         THEN("There is an error after the reading and the result variable has been set with the correct value")
         {
           REQUIRE_FALSE(error_stream.has_error());
           CHECK(error_stream.str().empty());
           CHECK(err == true);
-          CHECK(result == 0x3713);
+          CHECK(result == 0x423713);
         }
       }
     }
@@ -132,14 +132,14 @@ SCENARIO("Reading 32 bits in a file with an error", "[read]") {
       boolean err = false;
       WHEN("Reading 32 bits in the stream")
       {
-        int16_t result = saveg_read32_in_stream(file_stream.file(), &err, error_stream.file());
+        int32_t result = saveg_read32_from_context({file_stream.file(), &err, error_stream.file()});
         THEN("There is an error after the reading and the result is -1")
         {
           REQUIRE_FALSE(error_stream.has_error());
           CHECK(error_stream.str() == "saveg_read8: Unexpected end of file while reading save game\n");
           CHECK(file_stream.has_error());
           CHECK(err == true);
-          CHECK(result == static_cast<int16_t>(-1));
+          CHECK(result == static_cast<int32_t>(-1));
         }
       }
     }

@@ -19,7 +19,7 @@ SCENARIO("Writing 16 bits in a file", "[write]") {
 
       WHEN("Writing 16 bits in the stream")
       {
-        saveg_write16_in_stream(file_stream.file(), 0x4364, &err, error_stream.file());
+        saveg_write16_from_context({file_stream.file(), &err, error_stream.file()}, 0x4364);
 
         THEN("There is no error after the write and the written value is correct")
         {
@@ -35,7 +35,7 @@ SCENARIO("Writing 16 bits in a file", "[write]") {
       boolean err = true;
       WHEN("Writing 16 bits in the stream")
       {
-        saveg_write16_in_stream(file_stream.file(), 0x4364, &err, error_stream.file());
+        saveg_write16_from_context({file_stream.file(), &err, error_stream.file()}, 0x4364);
 
         THEN("There is still an error after writing and the value was written")
         {
@@ -59,7 +59,7 @@ SCENARIO("Writing 16 bits in a file fails", "[write]") {
       boolean err = false;
       WHEN("Writing 16 bits in the stream")
       {
-        saveg_write16_in_stream(file_stream.file(), 0x42, &err, error_stream.file());
+        saveg_write16_from_context({file_stream.file(), &err, error_stream.file()}, 0x4364);
 
         THEN("There is an error after the write")
         {
@@ -92,7 +92,7 @@ SCENARIO("Reading 16 bits in a file", "[read]") {
       WHEN("Reading 16 bits in the stream")
       {
         int16_t result =
-            saveg_read16_in_stream(file_stream.file(), &err, error_stream.file());
+            saveg_read16_from_context({file_stream.file(), &err, error_stream.file()});
 
         THEN("There is no error after reading and the result variable has been set with the correct value")
         {
@@ -107,7 +107,7 @@ SCENARIO("Reading 16 bits in a file", "[read]") {
       boolean err = true;
       WHEN("Reading 16 bits in the stream")
       {
-        int16_t result = saveg_read16_in_stream(file_stream.file(), &err, error_stream.file());
+        int16_t result = saveg_read16_from_context({file_stream.file(), &err, error_stream.file()});
 
         THEN("There is an error after the reading and the result variable has been set with the correct value")
         {
@@ -132,7 +132,7 @@ SCENARIO("Reading 16 bits in a file with an error", "[read]") {
       boolean err = false;
       WHEN("Reading 16 bits in the stream")
       {
-        int16_t result = saveg_read16_in_stream(file_stream.file(), &err, error_stream.file());
+        int16_t result = saveg_read16_from_context({file_stream.file(), &err, error_stream.file()});
         THEN("There is an error after the reading and the result is -1")
         {
           REQUIRE_FALSE(error_stream.has_error());
