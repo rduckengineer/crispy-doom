@@ -1,47 +1,14 @@
-#include "catch.hpp"
-#include <array>
-#include <memory>
-
 extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 }
 
+#include "file_stream.hpp"
+
+#include "catch.hpp"
+#include <array>
+
 static_assert(sizeof(boolean) == sizeof(int32_t));
-
-namespace {
-using FilePtr = std::unique_ptr<FILE, decltype(&fclose)>;
-auto openFileRead(std::array<byte, 2> &buffer) -> FilePtr;
-auto openFileWrite(std::array<byte, 2> &buffer) -> FilePtr;
-
-enum class OpenMode {
-  Read,
-  Write,
-};
-
-struct FileStream {
-  FileStream(std::array<byte, 2> buffer, OpenMode open_mode)
-      : buf(buffer)
-      , test_file([open_mode, this]() -> FilePtr
-                  {
-          switch (open_mode) {
-          case OpenMode::Write: return openFileWrite(buf);
-          case OpenMode::Read: return openFileRead(buf);
-          default: std::runtime_error("Unknown open mode");
-          }
-        }())
-  {}
-
-    FILE* file() { return test_file.get(); }
-    FILE* file() const { return test_file.get(); }
-    byte operator[](size_t index) { return  buf[index]; }
-    bool has_error() const { return ferror(file()) != 0; }
-
-private:
-    std::array<byte, 2> buf;
-    FilePtr test_file;
-};
-}
 
 // ------------------ 8 BIT SCENARIOS ------------------
 // write
@@ -168,20 +135,5 @@ SCENARIO("Reading 8 bits in a file with an error", "[read]") {
       }
     }
   }
-}
-
-namespace {
-auto openFileRead(std::array<byte, 2> &buffer)
-    -> std::unique_ptr<FILE, decltype(&fclose)> {
-  return {fmemopen(buffer.data(), 2 * sizeof(byte), "r"), fclose};
-}
-
-auto openFileWrite(std::array<byte, 2> &buffer)
-    -> std::unique_ptr<FILE, decltype(&fclose)> {
-  auto test_file = std::unique_ptr<FILE, decltype(&fclose)>{
-      fmemopen(buffer.data(), 2 * sizeof(byte), "a"), fclose};
-  setbuf(test_file.get(), NULL);
-  return test_file;
-}
 }
 // ------------------ 8 BIT SCENARIOS ------------------
