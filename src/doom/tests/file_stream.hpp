@@ -1,7 +1,9 @@
 #ifndef CRISPY_DOOM_FILE_STREAM_HPP
 #define CRISPY_DOOM_FILE_STREAM_HPP
 
+#include <array>
 #include <memory>
+#include <string_view>
 #include <stdexcept>
 
 enum class OpenMode {
@@ -9,10 +11,12 @@ enum class OpenMode {
   Write,
 };
 
+template <size_t N = 2>
 struct FileStream {
   using FilePtr = std::unique_ptr<FILE, decltype(&fclose)>;
+  using Buffer = std::array<byte, N>;
 
-  FileStream(std::array<byte, 2> buffer, OpenMode open_mode)
+  FileStream(Buffer buffer, OpenMode open_mode)
       : buf(buffer)
         , test_file([open_mode, this]() -> FilePtr
                   {
@@ -26,25 +30,27 @@ struct FileStream {
 
   FILE* file() { return test_file.get(); }
   FILE* file() const { return test_file.get(); }
-  byte operator[](size_t index) { return  buf[index]; }
+  byte& operator[](size_t index) { return  buf[index]; }
   bool has_error() const { return ferror(file()) != 0; }
 
+  std::string_view str() const { return reinterpret_cast<char const*>(buf.data()); }
+
 private:
-  auto static openFileRead(std::array<byte, 2> &buffer)
+  auto static openFileRead(Buffer &buffer)
       -> std::unique_ptr<FILE, decltype(&fclose)> {
-    return {fmemopen(buffer.data(), 2 * sizeof(byte), "r"), fclose};
+    return {fmemopen(buffer.data(), sizeof(Buffer), "r"), fclose};
   }
 
-  auto static openFileWrite(std::array<byte, 2> &buffer)
+  auto static openFileWrite(Buffer &buffer)
       -> std::unique_ptr<FILE, decltype(&fclose)> {
     auto test_file = std::unique_ptr<FILE, decltype(&fclose)>{
-        fmemopen(buffer.data(), 2 * sizeof(byte), "a"), fclose};
+        fmemopen(buffer.data(), sizeof(Buffer), "a"), fclose};
     setbuf(test_file.get(), NULL);
     return test_file;
   }
 
 private:
-  std::array<byte, 2> buf;
+  Buffer buf;
   FilePtr test_file;
 };
 

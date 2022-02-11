@@ -76,7 +76,7 @@ char *P_SaveGameFile(int slot)
 
 // Endian-safe integer read/write functions
 
-byte saveg_read8_in_stream(FILE* stream, boolean * error)
+byte saveg_read8_in_stream(FILE* stream, boolean * error, FILE* error_stream)
 {
   byte result = -1;
 
@@ -84,7 +84,7 @@ byte saveg_read8_in_stream(FILE* stream, boolean * error)
   {
     if (!*error)
     {
-      fprintf(stderr, "saveg_read8: Unexpected end of file while "
+      fprintf(error_stream, "saveg_read8: Unexpected end of file while "
                       "reading save game\n");
 
       *error = true;
@@ -96,16 +96,16 @@ byte saveg_read8_in_stream(FILE* stream, boolean * error)
 
 static byte saveg_read8(void)
 {
-  return saveg_read8_in_stream(save_stream, &savegame_error);
+  return saveg_read8_in_stream(save_stream, &savegame_error, stderr);
 }
 
-void saveg_write8_in_stream(FILE* stream, byte value, boolean * error)
+void saveg_write8_in_stream(FILE* stream, byte value, boolean * error, FILE* error_stream)
 {
     if (fwrite(&value, 1, 1, stream) < 1)
     {
         if (!*error)
         {
-            fprintf(stderr, "saveg_write8: Error while writing save game\n");
+            fprintf(error_stream, "saveg_write8: Error while writing save game\n");
 
             *error = true;
         }
@@ -113,7 +113,7 @@ void saveg_write8_in_stream(FILE* stream, byte value, boolean * error)
 }
 
 static void saveg_write8(byte value) {
-  saveg_write8_in_stream(save_stream, value, &savegame_error);
+  saveg_write8_in_stream(save_stream, value, &savegame_error, stderr);
 }
 
 static short saveg_read16(void)
