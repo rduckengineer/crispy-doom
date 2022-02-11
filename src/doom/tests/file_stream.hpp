@@ -28,6 +28,11 @@ struct FileStream {
                   }())
   {}
 
+  template <typename T>
+  [[nodiscard]] T as() const {
+    return *reinterpret_cast<T const*>(buf.data());
+  }
+
   FILE* file() { return test_file.get(); }
   FILE* file() const { return test_file.get(); }
   byte& operator[](size_t index) { return  buf[index]; }

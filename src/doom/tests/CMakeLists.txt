@@ -1,8 +1,6 @@
 add_executable(doom_tests
         main.cpp catch.hpp
-        savegame_test_8bit.cpp
-        savegame_test_16_bit.cpp
-        savegame_test_32_bit.cpp
+        savegame_test.cpp
         file_stream.hpp
 )
 
