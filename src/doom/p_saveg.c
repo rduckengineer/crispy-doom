@@ -116,40 +116,60 @@ static void saveg_write8(byte value) {
   saveg_write8_in_stream(save_stream, value, &savegame_error, stderr);
 }
 
-static short saveg_read16(void)
+int16_t saveg_read16_in_stream(FILE* stream, boolean* error, FILE* error_stream)
 {
     int result;
 
-    result = saveg_read8();
-    result |= saveg_read8() << 8;
+    result = saveg_read8_in_stream(stream, error, error_stream);
+    result |= saveg_read8_in_stream(stream, error, error_stream) << 8;
 
     return result;
 }
 
-static void saveg_write16(short value)
+static int16_t saveg_read16(void)
 {
-    saveg_write8(value & 0xff);
-    saveg_write8((value >> 8) & 0xff);
+  return saveg_read16_in_stream(save_stream, &savegame_error, stderr);
+}
+
+void saveg_write16_in_stream(FILE* stream, int16_t value, boolean * error, FILE* error_stream)
+{
+    saveg_write8_in_stream(stream, value & 0xff, error, error_stream);
+    saveg_write8_in_stream(stream, ((value >> 8) & 0xff), error, error_stream);
+}
+
+static void saveg_write16(int16_t value)
+{
+  saveg_write16_in_stream(save_stream, value, &savegame_error, stderr);
+}
+
+int32_t saveg_read32_in_stream(FILE* stream, boolean* error, FILE* error_stream)
+{
+    int result;
+
+    result = saveg_read8_in_stream(stream, error, error_stream);
+    result |= saveg_read8_in_stream(stream, error, error_stream) << 8;
+    result |= saveg_read8_in_stream(stream, error, error_stream) << 16;
+    result |= saveg_read8_in_stream(stream, error, error_stream) << 24;
+
+    return result;
 }
 
 static int saveg_read32(void)
 {
-    int result;
+    return saveg_read32_in_stream(save_stream, &savegame_error, stderr);
+}
 
-    result = saveg_read8();
-    result |= saveg_read8() << 8;
-    result |= saveg_read8() << 16;
-    result |= saveg_read8() << 24;
-
-    return result;
+void  saveg_write32_in_stream  (FILE* stream, int32_t value , boolean* error, FILE* error_stream)
+{
+    saveg_write8_in_stream(stream, value & 0xff, error, error_stream);
+    saveg_write8_in_stream(stream, (value >> 8) & 0xff, error, error_stream);
+    saveg_write8_in_stream(stream, (value >> 16) & 0xff, error, error_stream);
+    saveg_write8_in_stream(stream, (value >> 24) & 0xff, error, error_stream);
 }
 
 static void saveg_write32(int value)
 {
-    saveg_write8(value & 0xff);
-    saveg_write8((value >> 8) & 0xff);
-    saveg_write8((value >> 16) & 0xff);
-    saveg_write8((value >> 24) & 0xff);
+  saveg_write32_in_stream(save_stream, value, &savegame_error, stderr);
 }
 
 // Pad to 4-byte boundaries

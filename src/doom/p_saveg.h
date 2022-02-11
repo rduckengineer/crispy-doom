@@ -64,5 +64,9 @@ extern boolean savegame_error;
 
 void  saveg_write8_in_stream  (FILE* stream, byte value , boolean* error, FILE* error_stream);
 byte  saveg_read8_in_stream   (FILE* stream, boolean* error, FILE* error_stream);
+void  saveg_write16_in_stream  (FILE* stream, int16_t value , boolean* error, FILE* error_stream);
+int16_t saveg_read16_in_stream   (FILE* stream, boolean* error, FILE* error_stream);
+void  saveg_write32_in_stream  (FILE* stream, int32_t value , boolean* error, FILE* error_stream);
+int32_t saveg_read32_in_stream   (FILE* stream, boolean* error, FILE* error_stream);
 
 #endif
