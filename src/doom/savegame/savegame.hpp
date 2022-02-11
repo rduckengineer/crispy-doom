@@ -18,6 +18,30 @@ public:
     : m_context(context)
   {}
 
+  template <typename T>
+  void write(T value)
+  {
+    if constexpr (sizeof(T) == 1) {
+      saveg_write8_from_context(m_context, value);
+    } else if constexpr (sizeof(T) == 2) {
+      saveg_write16_from_context(m_context, value);
+    } else if constexpr (sizeof(T) == 4) {
+      saveg_write32_from_context(m_context, value);
+    }
+  }
+
+  template <typename T>
+  T read()
+  {
+    if constexpr (sizeof(T) == 1) {
+      return saveg_read8_from_context(m_context);
+    } else if constexpr (sizeof(T) == 2) {
+      return saveg_read16_from_context(m_context);
+    } else if constexpr (sizeof(T) == 4) {
+      return saveg_read32_from_context(m_context);
+    }
+  }
+
   void write8(byte value) {
     saveg_write8_from_context(m_context, value);
   }
