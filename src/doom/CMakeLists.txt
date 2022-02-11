@@ -1,3 +1,5 @@
+add_subdirectory(savegame)
+
 add_library(doom STATIC
             am_map.c        am_map.h
             deh_ammo.c
@@ -82,6 +84,7 @@ add_library(doom STATIC
             wi_stuff.c      wi_stuff.h)
 
 target_include_directories(doom PRIVATE "../" "${CMAKE_CURRENT_BINARY_DIR}/../../")
-target_link_libraries(doom SDL2::SDL2 SDL2::mixer SDL2::net common)
+target_link_libraries(doom SDL2::SDL2 SDL2::mixer SDL2::net common doom_cxx_savegame)
+
 
 add_subdirectory(tests)

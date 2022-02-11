@@ -76,100 +76,44 @@ char *P_SaveGameFile(int slot)
 
 // Endian-safe integer read/write functions
 
-byte saveg_read8_in_stream(FILE* stream, boolean * error, FILE* error_stream)
+static SaveGameContext production_context()
 {
-  byte result = -1;
+  SaveGameContext context;
 
-  if (fread(&result, 1, 1, stream) < 1)
-  {
-    if (!*error)
-    {
-      fprintf(error_stream, "saveg_read8: Unexpected end of file while "
-                      "reading save game\n");
+  context.stream = save_stream;
+  context.error = &savegame_error;
+  context.error_stream = stderr;
 
-      *error = true;
-    }
-  }
-
-  return result;
+  return context;
 }
 
 static byte saveg_read8(void)
 {
-  return saveg_read8_in_stream(save_stream, &savegame_error, stderr);
-}
-
-void saveg_write8_in_stream(FILE* stream, byte value, boolean * error, FILE* error_stream)
-{
-    if (fwrite(&value, 1, 1, stream) < 1)
-    {
-        if (!*error)
-        {
-            fprintf(error_stream, "saveg_write8: Error while writing save game\n");
-
-            *error = true;
-        }
-    }
+  return saveg_read8_from_context(production_context());
 }
 
 static void saveg_write8(byte value) {
-  saveg_write8_in_stream(save_stream, value, &savegame_error, stderr);
-}
-
-int16_t saveg_read16_in_stream(FILE* stream, boolean* error, FILE* error_stream)
-{
-    int result;
-
-    result = saveg_read8_in_stream(stream, error, error_stream);
-    result |= saveg_read8_in_stream(stream, error, error_stream) << 8;
-
-    return result;
+  saveg_write8_from_context(production_context(), value);
 }
 
 static int16_t saveg_read16(void)
 {
-  return saveg_read16_in_stream(save_stream, &savegame_error, stderr);
-}
-
-void saveg_write16_in_stream(FILE* stream, int16_t value, boolean * error, FILE* error_stream)
-{
-    saveg_write8_in_stream(stream, value & 0xff, error, error_stream);
-    saveg_write8_in_stream(stream, ((value >> 8) & 0xff), error, error_stream);
+  return saveg_read16_from_context(production_context());
 }
 
 static void saveg_write16(int16_t value)
 {
-  saveg_write16_in_stream(save_stream, value, &savegame_error, stderr);
-}
-
-int32_t saveg_read32_in_stream(FILE* stream, boolean* error, FILE* error_stream)
-{
-    int result;
-
-    result = saveg_read8_in_stream(stream, error, error_stream);
-    result |= saveg_read8_in_stream(stream, error, error_stream) << 8;
-    result |= saveg_read8_in_stream(stream, error, error_stream) << 16;
-    result |= saveg_read8_in_stream(stream, error, error_stream) << 24;
-
-    return result;
+  saveg_write16_from_context(production_context(), value);
 }
 
 static int saveg_read32(void)
 {
-    return saveg_read32_in_stream(save_stream, &savegame_error, stderr);
-}
-
-void  saveg_write32_in_stream  (FILE* stream, int32_t value , boolean* error, FILE* error_stream)
-{
-    saveg_write8_in_stream(stream, value & 0xff, error, error_stream);
-    saveg_write8_in_stream(stream, (value >> 8) & 0xff, error, error_stream);
-    saveg_write8_in_stream(stream, (value >> 16) & 0xff, error, error_stream);
-    saveg_write8_in_stream(stream, (value >> 24) & 0xff, error, error_stream);
+    return saveg_read32_from_context(production_context());
 }
 
 static void saveg_write32(int value)
 {
-  saveg_write32_in_stream(save_stream, value, &savegame_error, stderr);
+  saveg_write32_from_context(production_context(), value);
 }
 
 // Pad to 4-byte boundaries

@@ -23,7 +23,7 @@ SCENARIO("Writing 8 bits in a file", "[write]") {
 
       WHEN("Writing 8 bits in the stream")
       {
-        saveg_write8_in_stream(file_stream.file(), 0x43, &err, error_stream.file());
+        saveg_write8_from_context({file_stream.file(), &err, error_stream.file()}, 0x43);
 
         THEN("There is no error after the write and the written value is correct")
         {
@@ -38,7 +38,7 @@ SCENARIO("Writing 8 bits in a file", "[write]") {
       boolean err = true;
       WHEN("Writing 8 bits in the stream")
       {
-        saveg_write8_in_stream(file_stream.file(), 0x43, &err, error_stream.file());
+        saveg_write8_from_context({file_stream.file(), &err, error_stream.file()}, 0x43);
 
         THEN("There is still an error after writing and the value was written")
         {
@@ -61,7 +61,7 @@ SCENARIO("Writing 8 bits in a file fails", "[write]") {
       boolean err = false;
       WHEN("Writing 8 bits in the stream")
       {
-        saveg_write8_in_stream(file_stream.file(), 0x42, &err, error_stream.file());
+        saveg_write8_from_context({file_stream.file(), &err, error_stream.file()}, 0x42);
 
         THEN("There is an error after the write")
         {
@@ -93,7 +93,7 @@ SCENARIO("Reading 8 bits in a file", "[read]") {
       WHEN("Reading 8 bits in the stream")
       {
         byte result =
-            saveg_read8_in_stream(file_stream.file(), &err, error_stream.file());
+            saveg_read8_from_context({file_stream.file(), &err, error_stream.file()});
 
         THEN("There is no error after reading and the result variable has been set with the correct value")
         {
@@ -108,7 +108,7 @@ SCENARIO("Reading 8 bits in a file", "[read]") {
       boolean err = true;
       WHEN("Reading 8 bits in the stream")
       {
-        byte result = saveg_read8_in_stream(file_stream.file(), &err, error_stream.file());
+        byte result = saveg_read8_from_context({file_stream.file(), &err, error_stream.file()});
 
         THEN("There is an error after the reading and the result variable has been set with the correct value")
         {
@@ -133,7 +133,7 @@ SCENARIO("Reading 8 bits in a file with an error", "[read]") {
       boolean err = false;
       WHEN("Reading 8 bits in the stream")
       {
-        byte result = saveg_read8_in_stream(file_stream.file(), &err, error_stream.file());
+        byte result = saveg_read8_from_context({file_stream.file(), &err, error_stream.file()});
         THEN("There is an error after the reading and the result is -1")
         {
           REQUIRE_FALSE(error_stream.has_error());
