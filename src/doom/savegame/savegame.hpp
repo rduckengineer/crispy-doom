@@ -42,14 +42,6 @@ public:
     }
   }
 
-  void write8(byte value) {
-    saveg_write8_from_context(m_context, value);
-  }
-
-  byte read8() {
-    return saveg_read8_from_context(m_context);
-  }
-
   [[nodiscard]] bool error() const noexcept { return static_cast<bool>(*m_context.error); }
 
 private:
