@@ -1,25 +1,15 @@
 #include "savegame.hpp"
 
+namespace {
+SaveGame prod_savegame();
+}
+
 extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 
 FILE *save_stream;
-boolean savegame_error;
-
-namespace {
-SaveGameContext production_context() {
-  SaveGameContext context;
-
-  context.stream = save_stream;
-  context.error = &savegame_error;
-  context.error_stream = stderr;
-
-  return context;
-}
-
-SaveGame prod_savegame() { return SaveGame{production_context()}; }
-}
+bool savegame_error;
 
 byte saveg_read8(void) { return prod_savegame().read<byte>(); }
 void saveg_write8(byte value) { prod_savegame().write<byte>(value); }
@@ -29,6 +19,23 @@ void saveg_write16(int16_t value) { prod_savegame().write<int16_t>(value); }
 
 int32_t saveg_read32(void) { return prod_savegame().read<int32_t>(); }
 void saveg_write32(int32_t value) { prod_savegame().write<int32_t>(value); }
+
+void reset_savegame_error() { savegame_error = false; }
+}
+
+#include <iostream>
+
+namespace {
+SaveGameContext production_context() {
+  SaveGameContext context {
+    .stream = save_stream,
+    .error = savegame_error,
+    .err_os = std::cerr,
+  };
+  return context;
+}
+
+SaveGame prod_savegame() { return SaveGame{production_context()}; }
 }
 
 byte saveg_read8_from_context(SaveGameContext context)
@@ -37,12 +44,12 @@ byte saveg_read8_from_context(SaveGameContext context)
 
   if (fread(&result, 1, 1, context.stream) < 1)
   {
-    if (!*context.error)
+    if (!context.error)
     {
-      fprintf(context.error_stream, "saveg_read8: Unexpected end of file while "
-                            "reading save game\n");
+      context.err_os << "saveg_read8: Unexpected end of file while "
+                            "reading save game\n";
 
-      *context.error = true;
+      context.error = true;
     }
   }
 
@@ -53,11 +60,11 @@ void saveg_write8_from_context(SaveGameContext context, byte value)
 {
   if (fwrite(&value, 1, 1, context.stream) < 1)
   {
-    if (!*context.error)
+    if (!context.error)
     {
-      fprintf(context.error_stream, "saveg_write8: Error while writing save game\n");
+      context.err_os << "saveg_write8: Error while writing save game\n";
 
-      *context.error = true;
+      context.error = true;
     }
   }
 }

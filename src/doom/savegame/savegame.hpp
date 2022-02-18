@@ -7,11 +7,13 @@ extern "C" {
 #include "p_saveg.h"
 }
 
+#include <iostream>
+
 struct SaveGameContext
 {
   FILE* stream;
-  boolean* error;
-  FILE* error_stream;
+  bool& error;
+  std::ostream& err_os;
 };
 
 byte saveg_read8_from_context(SaveGameContext context);
@@ -24,9 +26,9 @@ void saveg_write32_from_context(SaveGameContext context, int32_t value);
 class SaveGame
 {
 public:
-  explicit SaveGame(FILE* stream, bool initial_error, FILE* error_stream)
-    : m_has_error(initial_error)
-    , m_context{stream, &m_has_error, error_stream}
+  explicit SaveGame(FILE *stream, bool initial_error, std::ostream &err_os)
+      : m_has_error(initial_error)
+    , m_context{stream, m_has_error, err_os}
   {}
 
   explicit SaveGame(SaveGameContext context)
@@ -57,10 +59,10 @@ public:
     }
   }
 
-  [[nodiscard]] bool error() const noexcept { return static_cast<bool>(*m_context.error); }
+  [[nodiscard]] bool error() const noexcept { return m_context.error; }
 
 private:
-  boolean m_has_error = false;
+  bool m_has_error = false;
   SaveGameContext m_context;
 };
 
