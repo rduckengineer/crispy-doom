@@ -18,7 +18,7 @@ struct FileStream {
 
   FileStream(Buffer buffer, OpenMode open_mode)
       : buf(buffer)
-        , test_file([open_mode, this]() -> FilePtr
+      , test_file([open_mode, this]() -> FilePtr
                   {
                     switch (open_mode) {
                     case OpenMode::Write: return openFileWrite(buf);

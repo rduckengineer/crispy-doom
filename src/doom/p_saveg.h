@@ -62,18 +62,11 @@ void P_RestoreTargets (void);
 extern FILE *save_stream;
 extern boolean savegame_error;
 
-typedef struct SaveGameContext
-{
-  FILE* stream;
-  boolean* error;
-  FILE* error_stream;
-} SaveGameContext;
-
-byte saveg_read8_from_context(SaveGameContext context);
-void  saveg_write8_from_context  (SaveGameContext context, byte value);
-int16_t saveg_read16_from_context   (SaveGameContext context);
-void  saveg_write16_from_context  (SaveGameContext context, int16_t value);
-int32_t saveg_read32_from_context   (SaveGameContext context);
-void  saveg_write32_from_context  (SaveGameContext context, int32_t value);
-
+// Endian-safe integer read/write functions
+byte saveg_read8(void);
+void saveg_write8(byte value);
+int16_t saveg_read16(void);
+void saveg_write16(int16_t value);
+int32_t saveg_read32(void);
+void saveg_write32(int32_t value);
 #endif

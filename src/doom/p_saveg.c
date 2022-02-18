@@ -33,9 +33,7 @@
 #include "m_misc.h"
 #include "r_state.h"
 
-FILE *save_stream;
 int savegamelength;
-boolean savegame_error;
 static int restoretargets_fail;
 
 // Get the filename of a temporary file to write the savegame to.  After
@@ -72,48 +70,6 @@ char *P_SaveGameFile(int slot)
     M_snprintf(filename, filename_size, "%s%s", savegamedir, basename);
 
     return filename;
-}
-
-// Endian-safe integer read/write functions
-
-static SaveGameContext production_context()
-{
-  SaveGameContext context;
-
-  context.stream = save_stream;
-  context.error = &savegame_error;
-  context.error_stream = stderr;
-
-  return context;
-}
-
-static byte saveg_read8(void)
-{
-  return saveg_read8_from_context(production_context());
-}
-
-static void saveg_write8(byte value) {
-  saveg_write8_from_context(production_context(), value);
-}
-
-static int16_t saveg_read16(void)
-{
-  return saveg_read16_from_context(production_context());
-}
-
-static void saveg_write16(int16_t value)
-{
-  saveg_write16_from_context(production_context(), value);
-}
-
-static int saveg_read32(void)
-{
-    return saveg_read32_from_context(production_context());
-}
-
-static void saveg_write32(int value)
-{
-  saveg_write32_from_context(production_context(), value);
 }
 
 // Pad to 4-byte boundaries

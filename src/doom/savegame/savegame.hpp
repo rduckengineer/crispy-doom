@@ -1,10 +1,25 @@
 #ifndef CRISPY_DOOM_SAVEGAME_HPP
 #define CRISPY_DOOM_SAVEGAME_HPP
 
+
 extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 }
+
+struct SaveGameContext
+{
+  FILE* stream;
+  boolean* error;
+  FILE* error_stream;
+};
+
+byte saveg_read8_from_context(SaveGameContext context);
+void saveg_write8_from_context(SaveGameContext context, byte value);
+int16_t saveg_read16_from_context(SaveGameContext context);
+void saveg_write16_from_context(SaveGameContext context, int16_t value);
+int32_t saveg_read32_from_context(SaveGameContext context);
+void saveg_write32_from_context(SaveGameContext context, int32_t value);
 
 class SaveGame
 {
