@@ -2187,7 +2187,7 @@ void G_DoLoadGame (void)
     }
     savewadfilename = NULL;
 
-    savegame_error = false;
+    reset_savegame_error();
 
     if (!P_ReadSaveGameHeader())
     {
@@ -2282,7 +2282,7 @@ void G_DoSaveGame (void)
         }
     }
 
-    savegame_error = false;
+    reset_savegame_error();
 
     P_WriteSaveGameHeader(savedescription);
 

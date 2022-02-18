@@ -60,7 +60,8 @@ void P_UnArchiveSpecials (void);
 void P_RestoreTargets (void);
 
 extern FILE *save_stream;
-extern boolean savegame_error;
+
+void reset_savegame_error();
 
 // Endian-safe integer read/write functions
 byte saveg_read8(void);
