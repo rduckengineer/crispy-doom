@@ -110,6 +110,7 @@ struct alignas(4) boolean
    bool b {};
    char padding[3]{};
 
+  boolean() : b(false) {}
   boolean(bool b_) : b(b_) {}
   boolean& operator=(bool b_) { b = b_; return *this; }
   operator bool() const { return b; }

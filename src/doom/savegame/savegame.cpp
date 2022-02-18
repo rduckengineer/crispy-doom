@@ -1,9 +1,35 @@
+#include "savegame.hpp"
 
 extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 
+FILE *save_stream;
+boolean savegame_error;
 
+namespace {
+SaveGameContext production_context() {
+  SaveGameContext context;
+
+  context.stream = save_stream;
+  context.error = &savegame_error;
+  context.error_stream = stderr;
+
+  return context;
+}
+
+SaveGame prod_savegame() { return SaveGame{production_context()}; }
+}
+
+byte saveg_read8(void) { return prod_savegame().read<byte>(); }
+void saveg_write8(byte value) { prod_savegame().write<byte>(value); }
+
+int16_t saveg_read16(void) { return prod_savegame().read<int16_t>(); }
+void saveg_write16(int16_t value) { prod_savegame().write<int16_t>(value); }
+
+int32_t saveg_read32(void) { return prod_savegame().read<int32_t>(); }
+void saveg_write32(int32_t value) { prod_savegame().write<int32_t>(value); }
+}
 
 byte saveg_read8_from_context(SaveGameContext context)
 {
@@ -23,7 +49,7 @@ byte saveg_read8_from_context(SaveGameContext context)
   return result;
 }
 
-void  saveg_write8_from_context(SaveGameContext context, byte value)
+void saveg_write8_from_context(SaveGameContext context, byte value)
 {
   if (fwrite(&value, 1, 1, context.stream) < 1)
   {
@@ -72,5 +98,5 @@ void  saveg_write32_from_context(SaveGameContext context, int32_t value)
   saveg_write8_from_context(context, (value >> 16) & 0xff);
   saveg_write8_from_context(context, (value >> 24) & 0xff);
 }
-}
+
 
