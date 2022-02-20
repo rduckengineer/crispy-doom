@@ -23,7 +23,7 @@ struct FileStream {
                     switch (open_mode) {
                     case OpenMode::Write: return openFileWrite(buf);
                     case OpenMode::Read: return openFileRead(buf);
-                    default: std::runtime_error("Unknown open mode");
+                    default: throw std::runtime_error("Unknown open mode");
                     }
                   }())
   {}

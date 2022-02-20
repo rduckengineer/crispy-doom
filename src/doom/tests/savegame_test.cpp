@@ -49,7 +49,7 @@ TEMPLATE_TEST_CASE("Writing in a file fails", "[write]", int8_t, int16_t, int32_
 
       WHEN("Writing in the stream")
       {
-        saveg.template write<TestType>(0x4364);
+        saveg.template write<TestType>(static_cast<TestType>(0x4364));
 
         THEN("There is an error after the write")
         {
