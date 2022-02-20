@@ -37,10 +37,15 @@
 
 static char *line, *string;
 
+void write_in_stream(const char* content)
+{
+  fputs(content, save_stream);
+}
+
 static void P_WritePackageTarname (const char *key)
 {
 	M_snprintf(line, MAX_LINE_LEN, "%s %s\n", key, PACKAGE_VERSION);
-	fputs(line, save_stream);
+	write_in_stream(line);
 }
 
 // maplumpinfo->wad_file->basename
@@ -50,7 +55,7 @@ char *savewadfilename = NULL;
 static void P_WriteWadFileName (const char *key)
 {
 	M_snprintf(line, MAX_LINE_LEN, "%s %s\n", key, W_WadNameForLump(maplumpinfo));
-	fputs(line, save_stream);
+	write_in_stream(line);
 }
 
 static void P_ReadWadFileName (const char *key)
@@ -78,7 +83,7 @@ static void P_WriteExtraKills (const char *key)
 	if (extrakills)
 	{
 		M_snprintf(line, MAX_LINE_LEN, "%s %d\n", key, extrakills);
-		fputs(line, save_stream);
+		write_in_stream(line);
 	}
 }
 
@@ -100,7 +105,7 @@ static void P_WriteTotalLevelTimes (const char *key)
 	if (totalleveltimes)
 	{
 		M_snprintf(line, MAX_LINE_LEN, "%s %d\n", key, totalleveltimes);
-		fputs(line, save_stream);
+		write_in_stream(line);
 	}
 }
 
@@ -135,7 +140,7 @@ static void P_WriteFireFlicker (const char *key)
 			           (int)flick->count,
 			           (int)flick->maxlight,
 			           (int)flick->minlight);
-			fputs(line, save_stream);
+			write_in_stream(line);
 		}
 	}
 }
@@ -182,7 +187,7 @@ static void P_WriteSoundTarget (const char *key)
 			           key,
 			           i,
 			           P_ThinkerToIndex((thinker_t *) sector->soundtarget));
-			fputs(line, save_stream);
+			write_in_stream(line);
 		}
 	}
 }
@@ -216,7 +221,7 @@ static void P_WriteOldSpecial (const char *key)
 			           key,
 			           i,
 			           sector->oldspecial);
-			fputs(line, save_stream);
+			write_in_stream(line);
 		}
 	}
 }
@@ -250,7 +255,7 @@ static void P_WriteRLightlevel (const char *key)
 			           key,
 			           i,
 			           (int)sector->rlightlevel);
-			fputs(line, save_stream);
+			write_in_stream(line);
 		}
 	}
 }
@@ -289,7 +294,7 @@ static void P_WriteButton (const char *key)
 			           (int)button->where,
 			           (int)button->btexture,
 			           (int)button->btimer);
-			fputs(line, save_stream);
+			write_in_stream(line);
 		}
 	}
 }
@@ -330,7 +335,7 @@ static void P_WriteBrainTarget (const char *key)
 				           key,
 				           numbraintargets,
 				           braintargeton);
-				fputs(line, save_stream);
+				write_in_stream(line);
 
 				// [crispy] return after the first brain spitter is found
 				return;
@@ -371,7 +376,7 @@ static void P_WriteMarkPoints (const char *key)
 		           p[5], p[6], p[7], p[8], p[9],
 		           p[10], p[11], p[12], p[13], p[14],
 		           p[15], p[16], p[17], p[18], p[19]);
-		fputs(line, save_stream);
+		write_in_stream(line);
 	}
 }
 
@@ -403,7 +408,7 @@ static void P_WritePlayersLookdir (const char *key)
 		if (playeringame[i] && players[i].lookdir)
 		{
 			M_snprintf(line, MAX_LINE_LEN, "%s %d %d\n", key, i, players[i].lookdir);
-			fputs(line, save_stream);
+			write_in_stream(line);
 		}
 	}
 }
@@ -433,7 +438,8 @@ static void P_WriteMusInfo (const char *key)
 		strncpy(orig, lumpinfo[musinfo.items[0]]->name, 8);
 
 		M_snprintf(line, MAX_LINE_LEN, "%s %s %s\n", key, lump, orig);
-		fputs(line, save_stream);
+
+		write_in_stream(line);
 	}
 }
 
@@ -529,80 +535,102 @@ static void P_ReadKeyValuePairs (int pass)
 // [crispy] pointer to the info struct for the map lump about to load
 lumpinfo_t *savemaplumpinfo = NULL;
 
+
+boolean is_crispy_key(const char* key)
+{
+  return !strncmp(key, extsavegdata[0].key, MAX_STRING_LEN);
+}
+
+void find_ext_start_and_process_first_pass(long endpos) {
+  for (long p = endpos - 1; p > 0; p--)
+  {
+    byte curbyte;
+
+    fseek(save_stream, p, SEEK_SET);
+
+    if (fread(&curbyte, 1, 1, save_stream) < 1)
+    {
+      break;
+    }
+
+    if (curbyte == SAVEGAME_EOF)
+    {
+      if (!fgets(line, MAX_LINE_LEN, save_stream))
+      {
+        continue;
+      }
+
+      if (sscanf(line, "%s", string) == 1 && is_crispy_key(string))
+      {
+        P_ReadKeyValuePairs(0);
+        break;
+      }
+    }
+  }
+}
+
+void skip_header_and_gameskill()
+{
+  // [crispy] + 1 for "gameskill"
+  fseek(save_stream, SAVESTRINGSIZE + VERSIONSIZE + 1, SEEK_SET);
+}
+
+
+void load_lump_for_episode_and_map()
+{
+  int lumpnum = -1;
+
+  skip_header_and_gameskill();
+  byte episode = saveg_read8();
+  byte map = saveg_read8();
+
+  lumpnum = P_GetNumForMap ((int) episode, (int) map, false);
+
+  if (lumpnum >= 0)
+  {
+    savemaplumpinfo = lumpinfo[lumpnum];
+  }
+  else
+  {
+    // [crispy] unavailable map!
+    savemaplumpinfo = NULL;
+  }
+}
+
+void read_first_pass()
+{
+  long curpos = ftell(save_stream);
+
+  load_lump_for_episode_and_map();
+
+  // [crispy] read key/value pairs past the end of the regular savegame
+  // data
+  fseek(save_stream, 0, SEEK_END);
+  long endpos = ftell(save_stream);
+
+  find_ext_start_and_process_first_pass(endpos);
+
+  // [crispy] back to where we started
+  fseek(save_stream, curpos, SEEK_SET);
+}
+
+void read_second_pass()
+{
+  P_ReadKeyValuePairs(1);
+}
+
 void P_ReadExtendedSaveGameData (int pass)
 {
-	long p, curpos, endpos;
-	byte episode, map;
-	int lumpnum = -1;
-
 	line = malloc(MAX_LINE_LEN);
 	string = malloc(MAX_STRING_LEN);
 
 	// [crispy] two-pass reading of extended savegame data
-	if (pass == 1)
-	{
-		P_ReadKeyValuePairs(1);
+	if (pass == 0) {
+          read_first_pass();
+	} else {
+          read_second_pass();
+        }
 
-		free(line);
-		free(string);
-
-		return;
-	}
-
-	curpos = ftell(save_stream);
-
-	// [crispy] check which map we would want to load
-	fseek(save_stream, SAVESTRINGSIZE + VERSIONSIZE + 1, SEEK_SET); // [crispy] + 1 for "gameskill"
-	if (fread(&episode, 1, 1, save_stream) == 1 &&
-	    fread(&map, 1, 1, save_stream) == 1)
-	{
-		lumpnum = P_GetNumForMap ((int) episode, (int) map, false);
-	}
-
-	if (lumpnum >= 0)
-	{
-		savemaplumpinfo = lumpinfo[lumpnum];
-	}
-	else
-	{
-		// [crispy] unavailable map!
-		savemaplumpinfo = NULL;
-	}
-
-	// [crispy] read key/value pairs past the end of the regular savegame data
-	fseek(save_stream, 0, SEEK_END);
-	endpos = ftell(save_stream);
-
-	for (p = endpos - 1; p > 0; p--)
-	{
-		byte curbyte;
-
-		fseek(save_stream, p, SEEK_SET);
-
-		if (fread(&curbyte, 1, 1, save_stream) < 1)
-		{
-			break;
-		}
-
-		if (curbyte == SAVEGAME_EOF)
-		{
-			if (!fgets(line, MAX_LINE_LEN, save_stream))
-			{
-				continue;
-			}
-
-			if (sscanf(line, "%s", string) == 1 &&
-			    !strncmp(string, extsavegdata[0].key, MAX_STRING_LEN))
-			{
-				P_ReadKeyValuePairs(0);
-				break;
-			}
-		}
-	}
-
-	free(line);
-	free(string);
-
-	// [crispy] back to where we started
-	fseek(save_stream, curpos, SEEK_SET);
+        free(line);
+        free(string);
 }
