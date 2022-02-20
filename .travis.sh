@@ -1,6 +1,6 @@
 #!/bin/sh
 if [ "$ANALYZE" = "true" ] ; then
-	cppcheck -isrc/doom/tests/catch.hpp --error-exitcode=1 -j2 -UTESTING -Iopl -Isrc -Isrc/setup opl pcsound src textscreen 2> stderr.txt
+	cppcheck --error-exitcode=1 --clang -UTESTING -Iopl -Isrc -Isrc/setup opl pcsound src textscreen 2> stderr.txt
 	RET=$?
 	if [ -s stderr.txt ]
 	then
