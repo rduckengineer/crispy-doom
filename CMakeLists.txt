@@ -27,7 +27,7 @@ if(MSVC)
     add_definitions("/D_CRT_SECURE_NO_WARNINGS" "/D_CRT_SECURE_NO_DEPRECATE"
                     "/D_CRT_NONSTDC_NO_DEPRECATE")
 else()
-    add_compile_options("-Wall" "-Wredundant-decls")
+    add_compile_options("-Wall" "-Wredundant-decls" "-Werror")
 endif()
 
 find_package(SDL2 2.0.7)

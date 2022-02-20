@@ -102,19 +102,12 @@
 
 #if defined(__cplusplus) || defined(__bool_true_false_are_defined)
 
-// This struct emulates the C behavior where boolean is a 4-byte enum
+// This enum is forced as being int, like the C version,
+// but unlike the C version it doesn't try to redefine C++ reserved keywords
 // Somehow, if it is indeed a bool, even in C, there are regressions in the game
 // TODO: figure out what is going on here
-struct alignas(4) boolean
-{
-   bool b {};
-   char padding[3]{};
-
-  boolean() : b(false) {}
-  boolean(bool b_) : b(b_) {}
-  boolean& operator=(bool b_) { b = b_; return *this; }
-  operator bool() const { return b; }
-};
+enum boolean : uint32_t
+{};
 
 #else
 
