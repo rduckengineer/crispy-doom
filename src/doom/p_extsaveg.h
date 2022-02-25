@@ -34,4 +34,9 @@ extern thinker_t* P_IndexToThinker (uint32_t index);
 extern void M_ForceLoadGame (void);
 extern void M_ConfirmDeleteGame (void);
 
+void write_in_stream(const char* content);
+size_t read_one_byte(byte *curbyte);
+char *read_line(char *line_);
+void seek_in_file(long offset, int whence);
+
 #endif

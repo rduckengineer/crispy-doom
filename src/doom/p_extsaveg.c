@@ -37,10 +37,15 @@
 
 static char *line, *string;
 
-void write_in_stream(const char* content)
-{
-  fputs(content, save_stream);
+/////
+void seek_from_start(long offset) {
+  seek_in_file(offset, SEEK_SET);
 }
+
+void seek_from_end(long offset) {
+  seek_in_file(offset, SEEK_END);
+}
+//////
 
 static void P_WritePackageTarname (const char *key)
 {
@@ -513,7 +518,7 @@ void P_WriteExtendedSaveGameData (void)
 
 static void P_ReadKeyValuePairs (int pass)
 {
-	while (fgets(line, MAX_LINE_LEN, save_stream))
+	while (read_line(line))
 	{
 		if (sscanf(line, "%s", string) == 1)
 		{
@@ -541,21 +546,23 @@ boolean is_crispy_key(const char* key)
   return !strncmp(key, extsavegdata[0].key, MAX_STRING_LEN);
 }
 
+
+
 void find_ext_start_and_process_first_pass(long endpos) {
   for (long p = endpos - 1; p > 0; p--)
   {
     byte curbyte;
 
-    fseek(save_stream, p, SEEK_SET);
+    seek_from_start(p);
 
-    if (fread(&curbyte, 1, 1, save_stream) < 1)
+    if (read_one_byte(&curbyte) < 1)
     {
       break;
     }
 
     if (curbyte == SAVEGAME_EOF)
     {
-      if (!fgets(line, MAX_LINE_LEN, save_stream))
+      if (!read_line(line))
       {
         continue;
       }
@@ -572,7 +579,7 @@ void find_ext_start_and_process_first_pass(long endpos) {
 void skip_header_and_gameskill()
 {
   // [crispy] + 1 for "gameskill"
-  fseek(save_stream, SAVESTRINGSIZE + VERSIONSIZE + 1, SEEK_SET);
+  seek_from_start(SAVESTRINGSIZE + VERSIONSIZE + 1);
 }
 
 
@@ -599,19 +606,19 @@ void load_lump_for_episode_and_map()
 
 void read_first_pass()
 {
-  long curpos = ftell(save_stream);
+  long curpos = current_position();
 
   load_lump_for_episode_and_map();
 
   // [crispy] read key/value pairs past the end of the regular savegame
   // data
-  fseek(save_stream, 0, SEEK_END);
-  long endpos = ftell(save_stream);
+  seek_from_end(0);
+  long endpos = current_position();
 
   find_ext_start_and_process_first_pass(endpos);
 
   // [crispy] back to where we started
-  fseek(save_stream, curpos, SEEK_SET);
+  seek_from_start(curpos);
 }
 
 void read_second_pass()

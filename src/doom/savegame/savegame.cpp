@@ -21,6 +21,26 @@ int32_t saveg_read32(void) { return prod_savegame().read<int32_t>(); }
 void saveg_write32(int32_t value) { prod_savegame().write<int32_t>(value); }
 
 void reset_savegame_error() { savegame_error = false; }
+
+void open_savegame_for_write(const char* filename) {
+  save_stream = fopen(filename, "wb");
+}
+
+void open_savegame_for_read(const char* filename) {
+  save_stream = fopen(filename, "rb");
+}
+
+boolean has_savegame_open_failed() {
+  return static_cast<boolean>(save_stream == nullptr);
+}
+
+long current_position() {
+  return ftell(save_stream);
+}
+
+void close_savegame() {
+  fclose(save_stream);
+}
 }
 
 #include <iostream>

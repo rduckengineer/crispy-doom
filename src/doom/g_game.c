@@ -2138,10 +2138,12 @@ void G_LoadGame (char* name)
 { 
     M_StringCopy(savename, name, sizeof(savename));
     gameaction = ga_loadgame; 
-} 
+}
 
 int savedleveltime = 0; // [crispy] moved here for level time logging
-void G_DoLoadGame (void) 
+
+
+void G_DoLoadGame (void)
 { 
 	 
     // [crispy] loaded game must always be single player.
@@ -2153,11 +2155,11 @@ void G_DoLoadGame (void)
 	netgame = false;
 	deathmatch = false;
     }
-    gameaction = ga_nothing; 
-	 
-    save_stream = fopen(savename, "rb");
+    gameaction = ga_nothing;
 
-    if (save_stream == NULL)
+    open_savegame_for_read(savename);
+
+    if (has_savegame_open_failed())
     {
         I_Error("Could not load savegame %s", savename);
     }
@@ -2175,7 +2177,7 @@ void G_DoLoadGame (void)
             strcasecmp(savewadfilename, W_WadNameForLump(savemaplumpinfo)))
         {
             M_ForceLoadGame();
-            fclose(save_stream);
+            close_savegame();
             return;
         }
         else
@@ -2194,7 +2196,7 @@ void G_DoLoadGame (void)
         // [crispy] indicate game version mismatch
         extern void M_LoadGameVerMismatch ();
         M_LoadGameVerMismatch();
-        fclose(save_stream);
+        close_savegame();
         return;
     }
 
@@ -2219,7 +2221,7 @@ void G_DoLoadGame (void)
     // [crispy] read more extended savegame data
     P_ReadExtendedSaveGameData(1);
 
-    fclose(save_stream);
+    close_savegame();
     
     if (setsizeneeded)
 	R_ExecuteSetViewSize ();
@@ -2253,99 +2255,88 @@ G_SaveGame
     sendsave = true;
 }
 
-void G_DoSaveGame (void) 
+    void G_DoSaveGame (void)
 { 
-    char *savegame_file;
-    char *temp_savegame_file;
-    char *recovery_savegame_file;
+      char *savegame_file;
+      char *temp_savegame_file;
+      char *recovery_savegame_file;
 
-    recovery_savegame_file = NULL;
-    temp_savegame_file = P_TempSaveGameFile();
-    savegame_file = P_SaveGameFile(savegameslot);
+      recovery_savegame_file = NULL;
+      temp_savegame_file = P_TempSaveGameFile();
+      savegame_file = P_SaveGameFile(savegameslot);
 
-    // Open the savegame file for writing.  We write to a temporary file
-    // and then rename it at the end if it was successfully written.
-    // This prevents an existing savegame from being overwritten by
-    // a corrupted one, or if a savegame buffer overrun occurs.
-    save_stream = fopen(temp_savegame_file, "wb");
+      // Open the savegame file for writing.  We write to a temporary file
+      // and then rename it at the end if it was successfully written.
+      // This prevents an existing savegame from being overwritten by
+      // a corrupted one, or if a savegame buffer overrun occurs.
 
-    if (save_stream == NULL)
-    {
-        // Failed to save the game, so we're going to have to abort. But
-        // to be nice, save to somewhere else before we call I_Error().
-        recovery_savegame_file = M_TempFile("recovery.dsg");
-        save_stream = fopen(recovery_savegame_file, "wb");
-        if (save_stream == NULL)
-        {
-            I_Error("Failed to open either '%s' or '%s' to write savegame.",
-                    temp_savegame_file, recovery_savegame_file);
-        }
-    }
+      open_savegame_for_write(temp_savegame_file);
 
-    reset_savegame_error();
+      if (has_savegame_open_failed())
+      {
+          // Failed to save the game, so we're going to have to abort. But
+          // to be nice, save to somewhere else before we call I_Error().
+          recovery_savegame_file = M_TempFile("recovery.dsg");
+          open_savegame_for_write(recovery_savegame_file);
+          if (has_savegame_open_failed())
+          {
+              I_Error("Failed to open either '%s' or '%s' to write savegame.",
+                      temp_savegame_file, recovery_savegame_file);
+          }
+      }
 
-    P_WriteSaveGameHeader(savedescription);
+      reset_savegame_error();
 
-    // [crispy] some logging when saving
-    {
-	const int ltime = leveltime / TICRATE,
-	          ttime = (totalleveltimes + leveltime) / TICRATE;
-	extern const char *skilltable[];
+      P_WriteSaveGameHeader(savedescription);
 
-	fprintf(stderr, "G_DoSaveGame: Episode %d, Map %d, %s, Time %d:%02d:%02d, Total %d:%02d:%02d.\n",
-	        gameepisode, gamemap, skilltable[BETWEEN(0,5,(int) gameskill+1)],
-	        ltime/3600, (ltime%3600)/60, ltime%60,
-	        ttime/3600, (ttime%3600)/60, ttime%60);
-    }
+      // [crispy] some logging when saving
+      {
+          const int ltime = leveltime / TICRATE,
+                    ttime = (totalleveltimes + leveltime) / TICRATE;
+          extern const char *skilltable[];
 
-    P_ArchivePlayers ();
-    P_ArchiveWorld ();
-    P_ArchiveThinkers ();
-    P_ArchiveSpecials ();
+          fprintf(stderr, "G_DoSaveGame: Episode %d, Map %d, %s, Time %d:%02d:%02d, Total %d:%02d:%02d.\n",
+                  gameepisode, gamemap, skilltable[BETWEEN(0,5,(int) gameskill+1)],
+                  ltime/3600, (ltime%3600)/60, ltime%60,
+                  ttime/3600, (ttime%3600)/60, ttime%60);
+      }
 
-    P_WriteSaveGameEOF();
-    // [crispy] write extended savegame data
-    P_WriteExtendedSaveGameData();
+      P_ArchivePlayers ();
+      P_ArchiveWorld ();
+      P_ArchiveThinkers ();
+      P_ArchiveSpecials ();
 
-    // [crispy] unconditionally disable savegame and demo limits
-    /*
-    // Enforce the same savegame size limit as in Vanilla Doom,
-    // except if the vanilla_savegame_limit setting is turned off.
+      P_WriteSaveGameEOF();
+      // [crispy] write extended savegame data
+      P_WriteExtendedSaveGameData();
 
-    if (vanilla_savegame_limit && ftell(save_stream) > SAVEGAMESIZE)
-    {
-        I_Error("Savegame buffer overrun");
-    }
-    */
+      // Finish up, close the savegame file.
+      close_savegame();
 
-    // Finish up, close the savegame file.
+      if (recovery_savegame_file != NULL)
+      {
+          // We failed to save to the normal location, but we wrote a
+          // recovery file to the temp directory. Now we can bomb out
+          // with an error.
+          I_Error("Failed to open savegame file '%s' for writing.\n"
+                  "But your game has been saved to '%s' for recovery.",
+                  temp_savegame_file, recovery_savegame_file);
+      }
 
-    fclose(save_stream);
+      // Now rename the temporary savegame file to the actual savegame
+      // file, overwriting the old savegame if there was one there.
 
-    if (recovery_savegame_file != NULL)
-    {
-        // We failed to save to the normal location, but we wrote a
-        // recovery file to the temp directory. Now we can bomb out
-        // with an error.
-        I_Error("Failed to open savegame file '%s' for writing.\n"
-                "But your game has been saved to '%s' for recovery.",
-                temp_savegame_file, recovery_savegame_file);
-    }
+      remove(savegame_file);
+      rename(temp_savegame_file, savegame_file);
 
-    // Now rename the temporary savegame file to the actual savegame
-    // file, overwriting the old savegame if there was one there.
+      gameaction = ga_nothing;
+      M_StringCopy(savedescription, "", sizeof(savedescription));
+      M_StringCopy(savename, savegame_file, sizeof(savename));
 
-    remove(savegame_file);
-    rename(temp_savegame_file, savegame_file);
+      players[consoleplayer].message = DEH_String(GGSAVED);
 
-    gameaction = ga_nothing;
-    M_StringCopy(savedescription, "", sizeof(savedescription));
-    M_StringCopy(savename, savegame_file, sizeof(savename));
-
-    players[consoleplayer].message = DEH_String(GGSAVED);
-
-    // draw the pattern into the back screen
-    R_FillBackScreen ();
+      // draw the pattern into the back screen
+      R_FillBackScreen ();
 }
  
 

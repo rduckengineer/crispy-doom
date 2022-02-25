@@ -70,4 +70,10 @@ int16_t saveg_read16(void);
 void saveg_write16(int16_t value);
 int32_t saveg_read32(void);
 void saveg_write32(int32_t value);
+
+void open_savegame_for_write(const char* filename);
+void open_savegame_for_read(const char* filename);
+boolean has_savegame_open_failed();
+long current_position();
+void close_savegame();
 #endif
