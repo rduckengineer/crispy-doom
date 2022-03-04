@@ -33,8 +33,12 @@ struct FileStream {
     return *reinterpret_cast<T const*>(buf.data());
   }
 
-  FILE* file() { return test_file.get(); }
-  FILE* file() const { return test_file.get(); }
+  [[nodiscard]] FILE* file() { return test_file.get(); }
+  [[nodiscard]] FILE* file() const { return test_file.get(); }
+
+  [[nodiscard]] operator FILE* () { return file(); }
+  [[nodiscard]] operator FILE* () const { return file(); }
+
   byte& operator[](size_t index) { return  buf[index]; }
   bool has_error() const { return ferror(file()) != 0; }
 

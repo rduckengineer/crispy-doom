@@ -37,16 +37,6 @@
 
 static char *line, *string;
 
-/////
-void seek_from_start(long offset) {
-  seek_in_file(offset, SEEK_SET);
-}
-
-void seek_from_end(long offset) {
-  seek_in_file(offset, SEEK_END);
-}
-//////
-
 static void P_WritePackageTarname (const char *key)
 {
 	M_snprintf(line, MAX_LINE_LEN, "%s %s\n", key, PACKAGE_VERSION);

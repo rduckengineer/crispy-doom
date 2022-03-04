@@ -2,6 +2,7 @@ add_executable(doom_tests
         main.cpp catch.hpp
         savegame_test.cpp
         file_stream.hpp
+        file_utils_test.cpp
 )
 
 add_test(NAME savegame_tests COMMAND doom_tests)
