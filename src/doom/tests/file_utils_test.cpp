@@ -29,25 +29,27 @@ TEMPLATE_TEST_CASE("Current position updates with reads, writes and seeks",
 
 
   GIVEN("A writable empty file") {
-    initBuffer initialContent =
-        GENERATE(initBuffer{}, initBuffer{1, 1, 1, 1, 0});
+    initBuffer initialContent = initBuffer{1, 1, 1, 1, 0};
     auto mode = GENERATE(OpenMode::Read, OpenMode::Write);
     FileStream<10> file{initialContent, mode};
     INFO("Mode " << mode << " with content of size "
                  << file.lastNonNullIndex());
 
-    SaveGame save{file, false, err_stream};
+    SaveGame save = [&]() -> SaveGame {
+      file.sstream().exceptions(std::ios::failbit);
+      if(mode == OpenMode::Write) {
+        return SaveGame{file, file.writeStream(), false, err_stream};
+      }
+      return SaveGame{file, file.readStream(), false, err_stream};
+    }();
 
-    long const expectedStart =
-        mode == OpenMode::Write ? file.lastNonNullIndex() : 0;
-
-    /*THEN("The open mode is correctly detected") {
+    THEN("The open mode is correctly detected") {
       CHECK(save.openMode() == mode);
-    }*/
+    }
 
     THEN("Starting position is 0") {
       long startPos = save.currentPosition();
-      CHECK(startPos == expectedStart);
+      CHECK(startPos == 0);
     }
 
     WHEN("Write N bytes") {
@@ -55,8 +57,7 @@ TEMPLATE_TEST_CASE("Current position updates with reads, writes and seeks",
 
       THEN("Current position moved forward by N bytes") {
         long position = save.currentPosition();
-        long expectedPosition =
-            std::min(file.size(), expectedStart + sizeof(TestType));
+        long expectedPosition = sizeof(TestType);
         CHECK(position == expectedPosition);
       }
     }
@@ -71,10 +72,10 @@ TEMPLATE_TEST_CASE("Current position updates with reads, writes and seeks",
 
     WHEN("Seeking from end") {
       long offset = GENERATE(Catch::Generators::range(0, 4));
-      save.seekFromEnd(offset);
+      save.seekFromEnd(-offset);
+      INFO("with offset " << offset);
       THEN("Current position is the offset") {
-        CHECK(save.currentPosition() ==
-              std::max<long>(file.lastNonNullIndex() - offset, 0));
+        CHECK(save.currentPosition() == file.size() - offset);
       }
     }
   }
@@ -84,7 +85,7 @@ SCENARIO("Writing/Reading a line string") {
   std::stringstream err_os;
   GIVEN("A writable file") {
     FileStream<512> fileW{{}, OpenMode::Write};
-    SaveGame saveW{fileW, false, err_os};
+    SaveGame saveW{fileW, fileW.writeStream(), false, err_os};
 
     WHEN("Writing out a string") {
       static constexpr std::string_view text{"test\n"};
@@ -92,21 +93,30 @@ SCENARIO("Writing/Reading a line string") {
       THEN("The offset has moved by the string size") {
         long currentPosition = saveW.currentPosition();
         CHECK(currentPosition == text.size());
+        CHECK(fileW.str() == text);
       }
 
       GIVEN("A readable fileW") {
-        FileStream fileR{fileW.buf(), OpenMode::Read};
-        SaveGame saveR{fileR, false, err_os};
+        FileStream fileR{OpenMode::Read, fileW.sstream()};
+        SaveGame saveR{fileR, fileR.readStream(), false, err_os};
 
         WHEN("Reading a line") {
-          std::array<char, 10> buffer{};
+          std::array<char, 260> buffer{};
 
-          CHECK(saveR.readInto(buffer.data()));
+          bool didRead = saveR.readInto(buffer.data());
+          CHECK(didRead);
 
           THEN("The current position has moved and the content has been read") {
             long currentPosition = saveR.currentPosition();
             CHECK(currentPosition == text.size());
-            CHECK(std::string_view{buffer.data()} == text);
+            CHECK(std::string_view{buffer.data()} == std::string_view{text.data(), text.size()-1});
+          }
+
+          WHEN("Trying to read when the buffer is empty") {
+            saveR.readInto(buffer.data());
+            THEN("There is no error") {
+              CHECK_FALSE(saveR.stream_error());
+            }
           }
         }
       }
@@ -117,14 +127,19 @@ SCENARIO("Writing/Reading a line string") {
 SCENARIO("Open file checking") {
   GIVEN("No file") {
     std::stringstream err_os;
-    SaveGame save{nullptr, false, err_os};
+    bool err = false;
+    SaveGameContext context{
+        .error = err,
+        .err_os = err_os,
+    };
+    SaveGame save{context};
     THEN("File is not opened") { CHECK_FALSE(save.isOpen()); }
   }
 
   GIVEN("An open file") {
     FileStream<2> fileStream{{}, OpenMode::Read};
     std::stringstream err_os;
-    SaveGame save{fileStream, false, err_os};
+    SaveGame save{fileStream, fileStream.readStream(), false, err_os};
     THEN("File is opened") { CHECK(save.isOpen()); }
   }
 }

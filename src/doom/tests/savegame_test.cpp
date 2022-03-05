@@ -22,7 +22,7 @@ TEMPLATE_TEST_CASE("Writing in a file", "[write]", int8_t, int16_t, int32_t) {
                                                 std::numeric_limits<TestType>::max())));
 
     bool has_prior_error = GENERATE(true, false);
-    SaveGame saveg{file_stream.file(), has_prior_error, err_os};
+    SaveGame saveg{file_stream, file_stream.writeStream(), has_prior_error, err_os};
 
     WHEN("Writing in the stream")
     {
@@ -45,7 +45,7 @@ TEMPLATE_TEST_CASE("Writing in a file fails", "[write]", int8_t, int16_t, int32_
 
     AND_GIVEN("No prior error")
     {
-      SaveGame saveg{file_stream.file(), false, err_os};
+      SaveGame saveg{file_stream, file_stream.writeStream(), false, err_os};
 
       WHEN("Writing in the stream")
       {
@@ -75,7 +75,7 @@ TEMPLATE_TEST_CASE("Reading in a file", "[read]", int8_t, int16_t, int32_t) {
     std::stringstream err_os;
     bool has_prior_error = GENERATE(true, false);
 
-    SaveGame saveg{file_stream.file(), has_prior_error, err_os};
+    SaveGame saveg{file_stream, file_stream.readStream(), has_prior_error, err_os};
 
     WHEN("Reading in the stream")
     {
@@ -98,7 +98,7 @@ TEMPLATE_TEST_CASE("Reading in a file with an error", "[read]", int8_t, int16_t,
 
     AND_GIVEN("No prior error")
     {
-      SaveGame saveg{file_stream.file(), false, err_os};
+      SaveGame saveg{file_stream, file_stream.readStream(), false, err_os};
       WHEN("Reading in the stream")
       {
         auto result = saveg.template read<TestType>();

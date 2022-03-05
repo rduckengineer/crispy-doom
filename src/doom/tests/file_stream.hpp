@@ -8,14 +8,26 @@
 #include <string_view>
 #include <algorithm>
 #include <stdexcept>
+#include <sstream>
 
 template <size_t N = 2>
 struct FileStream {
   using FilePtr = std::unique_ptr<FILE, decltype(&fclose)>;
   using Buffer = std::array<byte, N>;
 
+  static std::ios::openmode toStd(OpenMode mode) {
+    return mode == OpenMode::Read ? std::ios::in : std::ios::out;
+  }
+
+  FileStream(OpenMode openMode, std::stringstream const& source)
+      : m_buf{}
+      , m_stream{source.str(), toStd(openMode) | std::ios::binary}
+      , m_test_file{nullptr, [](FILE*) { return 0; }}
+  {}
+
   FileStream(Buffer buffer, OpenMode open_mode)
       : m_buf(buffer)
+      , m_stream{ std::string{reinterpret_cast<char*>(buffer.data()), buffer.size()}, toStd(open_mode) | std::ios::binary}
       , m_test_file([open_mode, this]() -> FilePtr
                   {
                     switch (open_mode) {
@@ -34,22 +46,22 @@ struct FileStream {
   }
 
   [[nodiscard]] auto buf() const { return m_buf; }
+  [[nodiscard]] std::istream& readStream() { return m_stream; }
+  [[nodiscard]] std::ostream& writeStream() { return m_stream; }
+  [[nodiscard]] std::stringstream& sstream() { return m_stream; }
 
   template <typename T>
   [[nodiscard]] T as() const {
-    return *reinterpret_cast<T const*>(m_buf.data());
+    return *reinterpret_cast<T const*>(m_stream.str().data());
   }
 
-  [[nodiscard]] FILE* file() { return m_test_file.get(); }
-  [[nodiscard]] FILE* file() const { return m_test_file.get(); }
-
-  [[nodiscard]] operator FILE* () { return file(); }
-  [[nodiscard]] operator FILE* () const { return file(); }
+  [[nodiscard]] operator FILE* () { return m_test_file.get(); }
+  [[nodiscard]] operator FILE* () const { return m_test_file.get(); }
 
   byte& operator[](size_t index) { return m_buf[index]; }
-  bool has_error() const { return ferror(file()) != 0; }
+  bool has_error() const { return ferror(*this) != 0 || m_stream.fail(); }
 
-  std::string_view str() const { return reinterpret_cast<char const*>(m_buf.data()); }
+  std::string str() const { return m_stream.str().c_str(); }
 
 private:
   auto static openFileRead(Buffer &buffer)
@@ -67,6 +79,7 @@ private:
 
 private:
   Buffer m_buf;
+  std::stringstream m_stream;
   FilePtr m_test_file;
 };
 
