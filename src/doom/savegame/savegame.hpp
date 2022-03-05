@@ -20,15 +20,15 @@ struct SaveGameContext
   std::ostream* write_file;
 };
 
-byte saveg_read8_from_context(SaveGameContext context);
-void saveg_write8_from_context(SaveGameContext context, byte value);
-int16_t saveg_read16_from_context(SaveGameContext context);
-void saveg_write16_from_context(SaveGameContext context, int16_t value);
-int32_t saveg_read32_from_context(SaveGameContext context);
-void saveg_write32_from_context(SaveGameContext context, int32_t value);
-
 class SaveGame
 {
+  template <typename Callable>
+  struct onExit{
+    Callable fn;
+    onExit(Callable&& fn_) : fn(std::move(fn_)) {}
+    ~onExit() { fn(); }
+  };
+
 public:
   explicit SaveGame(std::istream &is, bool initial_error, std::ostream &err_os)
       : m_has_error(initial_error)
@@ -59,24 +59,39 @@ public:
   template <typename T>
   [[nodiscard]] T read()
   {
+    [[maybe_unused]] onExit ex{[this](){
+      if(m_context.read_file->fail()) {
+        m_context.err_os << "saveg_read8: Unexpected end of file while "
+                          "reading save game\n";
+        m_context.error = true;
+      }
+    }};
+
     if constexpr (sizeof(T) == 1) {
-      return static_cast<T>(saveg_read8_from_context(m_context));
+      return static_cast<T>(read8());
     } else if constexpr (sizeof(T) == 2) {
-      return saveg_read16_from_context(m_context);
+      return read16();
     } else if constexpr (sizeof(T) == 4) {
-      return saveg_read32_from_context(m_context);
+      return read32();
     }
   }
 
   template <typename T>
   void write(T value)
   {
+    [[maybe_unused]] onExit ex { [this]() {
+      if (m_context.write_file->fail()) {
+        m_context.err_os << "saveg_write8: Error while writing save game\n";
+        m_context.error = true;
+      }
+    }};
+
     if constexpr (sizeof(T) == 1) {
-      saveg_write8_from_context(m_context, value);
+      write8(value);
     } else if constexpr (sizeof(T) == 2) {
-      saveg_write16_from_context(m_context, value);
+      write16(value);
     } else if constexpr (sizeof(T) == 4) {
-      saveg_write32_from_context(m_context, value);
+      write32(value);
     } else if constexpr (std::is_same_v<T, char const*>) {
       assert(m_context.write_file);
       *m_context.write_file << value;
@@ -84,6 +99,15 @@ public:
       throw std::runtime_error("not implemented!");
     }
   }
+
+private:
+  byte read8();
+  int16_t read16();
+  int32_t read32();
+
+  void write8(byte value);
+  void write16(int16_t value);
+  void write32(int32_t value);
 
 private:
   bool m_has_error = false;

@@ -53,58 +53,42 @@ void SaveGame::seekFromEnd(long offset) {
     m_context.write_file->seekp(offset, std::ios::end);
 }
 
-byte saveg_read8_from_context(SaveGameContext context)
+byte SaveGame::read8()
 {
-  assert(context.read_file);
-
-  auto result = static_cast<byte>(context.read_file->get());
-
-  if(context.read_file->fail() && !context.error) {
-    context.err_os << "saveg_read8: Unexpected end of file while "
-                      "reading save game\n";
-    context.error = true;
-  }
-  return result;
+  assert(m_context.read_file);
+  return static_cast<byte>(m_context.read_file->get());
 }
 
-void saveg_write8_from_context(SaveGameContext context, byte value)
-{
-  assert(context.write_file);
-
-  context.write_file->put(static_cast<char>(value));
-
-  if(context.write_file->fail() && !context.error)
-  {
-    context.err_os << "saveg_write8: Error while writing save game\n";
-    context.error = true;
-  }
+void SaveGame::write8(byte value) {
+  assert(m_context.write_file);
+  m_context.write_file->put(static_cast<char>(value));
 }
 
-int16_t saveg_read16_from_context(SaveGameContext context)
+int16_t SaveGame::read16()
 {
-  int16_t result = saveg_read8_from_context(context);
-  return static_cast<int16_t>(result | saveg_read8_from_context(context) << 8);
+  int16_t result = read8();
+  return static_cast<int16_t>(result | read8() << 8);
 }
 
-void  saveg_write16_from_context(SaveGameContext context, int16_t value)
+void SaveGame::write16(int16_t value)
 {
-  saveg_write8_from_context(context, value & 0xff);
-  saveg_write8_from_context(context, ((value >> 8) & 0xff));
+  write8(value & 0xff);
+  write8((value >> 8) & 0xff);
 }
 
 
-int32_t saveg_read32_from_context(SaveGameContext context)
+int32_t SaveGame::read32()
 {
-  int32_t result = saveg_read8_from_context(context);
-  result |= saveg_read8_from_context(context) << 8;
-  result |= saveg_read8_from_context(context) << 16;
-  return result | saveg_read8_from_context(context) << 24;
+  int32_t result = read8();
+  result |= read8() << 8;
+  result |= read8() << 16;
+  return result | read8() << 24;
 }
 
-void  saveg_write32_from_context(SaveGameContext context, int32_t value)
+void SaveGame::write32(int32_t value)
 {
-  saveg_write8_from_context(context, value & 0xff);
-  saveg_write8_from_context(context, (value >> 8) & 0xff);
-  saveg_write8_from_context(context, (value >> 16) & 0xff);
-  saveg_write8_from_context(context, (value >> 24) & 0xff);
+  write8(value & 0xff);
+  write8((value >> 8) & 0xff);
+  write8((value >> 16) & 0xff);
+  write8((value >> 24) & 0xff);
 }
