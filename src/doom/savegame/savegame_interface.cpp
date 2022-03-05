@@ -4,22 +4,22 @@ extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 }
-#include <iostream>
+#include <memory>
 #include <fstream>
 
 
 namespace {
 bool savegame_error;
-std::fstream save_file{};
-std::istream* read_save_file{};
-std::ostream* write_save_file{};
+
+std::unique_ptr<std::istream> read_save_file{};
+std::unique_ptr<std::ostream> write_save_file{};
 
 SaveGameContext production_context() {
   SaveGameContext context {
       .error = savegame_error,
       .err_os = std::cerr,
-      .read_file = read_save_file,
-      .write_file = write_save_file,
+      .read_file = read_save_file.get(),
+      .write_file = write_save_file.get(),
   };
   return context;
 }
@@ -38,22 +38,19 @@ int32_t saveg_read32(void) { return prod_savegame().read<int32_t>(); }
 void saveg_write32(int32_t value) { prod_savegame().write<int32_t>(value); }
 
 void open_savegame_for_write(const char* filename) {
-  save_file.open(filename, std::ios::out | std::ios::binary);
-  write_save_file = &save_file;
+  write_save_file = std::make_unique<std::ofstream>(filename, std::ios::out | std::ios::binary);
 }
 
 void open_savegame_for_read(const char* filename) {
-  save_file.open(filename, std::ios::in | std::ios::binary);
-  read_save_file = &save_file;
+  read_save_file = std::make_unique<std::ifstream>(filename, std::ios::in | std::ios::binary);
 }
 
 void reset_savegame_error() { production_context().error = false; }
 
 void close_savegame()
 {
-  if(read_save_file) read_save_file = nullptr;
-  if(write_save_file) write_save_file = nullptr;
-  save_file.close();
+  read_save_file.reset();
+  write_save_file.reset();
 }
 
 boolean has_savegame_open_failed() {

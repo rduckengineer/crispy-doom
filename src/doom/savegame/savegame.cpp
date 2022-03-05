@@ -1,6 +1,7 @@
 #include "savegame.hpp"
 
 #include <limits>
+#include <cstring>
 
 OpenMode SaveGame::openMode() const {
   assert(m_context.read_file || m_context.write_file);
@@ -57,7 +58,7 @@ byte saveg_read8_from_context(SaveGameContext context)
   assert(context.read_file);
 
   auto result = static_cast<byte>(context.read_file->get());
-  [[maybe_unused]] auto curPos = context.read_file->tellg();
+
   if(context.read_file->fail() && !context.error) {
     context.err_os << "saveg_read8: Unexpected end of file while "
                       "reading save game\n";
@@ -69,7 +70,9 @@ byte saveg_read8_from_context(SaveGameContext context)
 void saveg_write8_from_context(SaveGameContext context, byte value)
 {
   assert(context.write_file);
+
   context.write_file->put(static_cast<char>(value));
+
   if(context.write_file->fail() && !context.error)
   {
     context.err_os << "saveg_write8: Error while writing save game\n";
@@ -79,12 +82,8 @@ void saveg_write8_from_context(SaveGameContext context, byte value)
 
 int16_t saveg_read16_from_context(SaveGameContext context)
 {
-  int16_t result;
-
-  result = saveg_read8_from_context(context);
-  result = static_cast<int16_t>(result | saveg_read8_from_context(context) << 8);
-
-  return result;
+  int16_t result = saveg_read8_from_context(context);
+  return static_cast<int16_t>(result | saveg_read8_from_context(context) << 8);
 }
 
 void  saveg_write16_from_context(SaveGameContext context, int16_t value)
@@ -96,14 +95,10 @@ void  saveg_write16_from_context(SaveGameContext context, int16_t value)
 
 int32_t saveg_read32_from_context(SaveGameContext context)
 {
-  int32_t result;
-
-  result = saveg_read8_from_context(context);
+  int32_t result = saveg_read8_from_context(context);
   result |= saveg_read8_from_context(context) << 8;
   result |= saveg_read8_from_context(context) << 16;
-  result |= saveg_read8_from_context(context) << 24;
-
-  return result;
+  return result | saveg_read8_from_context(context) << 24;
 }
 
 void  saveg_write32_from_context(SaveGameContext context, int32_t value)

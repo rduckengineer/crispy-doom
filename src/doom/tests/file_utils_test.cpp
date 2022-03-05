@@ -32,8 +32,6 @@ TEMPLATE_TEST_CASE("Current position updates with reads, writes and seeks",
     initBuffer initialContent = initBuffer{1, 1, 1, 1, 0};
     auto mode = GENERATE(OpenMode::Read, OpenMode::Write);
     FileStream<10> file{initialContent, mode};
-    INFO("Mode " << mode << " with content of size "
-                 << file.lastNonNullIndex());
 
     SaveGame save = [&]() -> SaveGame {
       file.sstream().exceptions(std::ios::failbit);

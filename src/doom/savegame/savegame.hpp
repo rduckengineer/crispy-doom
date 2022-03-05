@@ -60,7 +60,7 @@ public:
   [[nodiscard]] T read()
   {
     if constexpr (sizeof(T) == 1) {
-      return saveg_read8_from_context(m_context);
+      return static_cast<T>(saveg_read8_from_context(m_context));
     } else if constexpr (sizeof(T) == 2) {
       return saveg_read16_from_context(m_context);
     } else if constexpr (sizeof(T) == 4) {
