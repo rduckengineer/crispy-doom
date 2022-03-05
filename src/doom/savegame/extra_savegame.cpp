@@ -3,6 +3,4 @@ extern "C" {
 #include "p_saveg.h"
 #include "doomstat.h"
 #include "p_extsaveg.h"
-
-
 }

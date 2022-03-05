@@ -3,11 +3,14 @@
 
 #include <utility>
 
-template <typename Callable>
-struct onExit{
-  Callable fn;
-  onExit(Callable&& fn_) : fn(std::move(fn_)) {}
-  ~onExit() { fn(); }
+template <typename Callable> struct onExit
+{
+    Callable fn;
+    onExit(Callable&& fn_)
+        : fn(std::move(fn_))
+    {
+    }
+    ~onExit() { fn(); }
 };
 
 #endif // CRISPY_DOOM_ON_EXIT_HPP
