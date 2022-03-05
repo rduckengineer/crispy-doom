@@ -1,5 +1,6 @@
 add_library(doom_cxx_savegame
-        savegame.cpp savegame.hpp
+        savegame_interface.cpp
+        savegame.hpp
         extra_savegame.cpp
         open_mode.hpp
         )
