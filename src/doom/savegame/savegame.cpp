@@ -1,29 +1,21 @@
 #include "savegame.hpp"
 
-namespace {
-SaveGame prod_savegame();
-}
-
 extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
 }
-
-FILE *save_stream;
-bool savegame_error;
-
 #include <iostream>
 #include <fstream>
 
 
 namespace {
+bool savegame_error;
 std::fstream save_file{};
 std::istream* read_save_file{};
 std::ostream* write_save_file{};
 
 SaveGameContext production_context() {
   SaveGameContext context {
-      .stream = save_stream,
       .error = savegame_error,
       .err_os = std::cerr,
       .read_file = read_save_file,
@@ -59,10 +51,8 @@ void reset_savegame_error() { production_context().error = false; }
 
 void close_savegame()
 {
-  if(read_save_file)
-    read_save_file = nullptr;
-  if(write_save_file)
-    write_save_file = nullptr;
+  if(read_save_file) read_save_file = nullptr;
+  if(write_save_file) write_save_file = nullptr;
   save_file.close();
 }
 
@@ -86,10 +76,7 @@ char *read_line(char *line_) {
 }
 
 size_t read_one_byte(byte *curbyte) {
-  auto saveg = prod_savegame();
   *curbyte = prod_savegame().read<int8_t>();
-  if(saveg.error())
-    throw std::runtime_error("Couldn't read one byte!");
   return 1;
 }
 
@@ -105,46 +92,26 @@ void seek_from_end(long offset) {
 
 byte saveg_read8_from_context(SaveGameContext context)
 {
-  auto logError = [&](){
+  assert(context.read_file);
+
+  auto result = static_cast<byte>(context.read_file->get());
+  [[maybe_unused]] auto curPos = context.read_file->tellg();
+  if(context.read_file->fail() && !context.error) {
     context.err_os << "saveg_read8: Unexpected end of file while "
                       "reading save game\n";
     context.error = true;
-  };
-
-  if(context.read_file) {
-    auto result = static_cast<byte>(context.read_file->get());
-    [[maybe_unused]] auto curPos = context.read_file->tellg();
-    if(context.read_file->fail() && !context.error)
-      logError();
-    return result;
-  } else {
-    byte result = -1;
-
-    if (fread(&result, 1, 1, context.stream) < 1) {
-      if (!context.error)
-        logError();
-    }
-
-    return result;
   }
+  return result;
 }
 
 void saveg_write8_from_context(SaveGameContext context, byte value)
 {
-  auto logError = [&](){
+  assert(context.write_file);
+  context.write_file->put(static_cast<char>(value));
+  if(context.write_file->fail() && !context.error)
+  {
     context.err_os << "saveg_write8: Error while writing save game\n";
     context.error = true;
-  };
-
-  if(context.write_file) {
-    context.write_file->put(static_cast<char>(value));
-    if(context.write_file->fail() && !context.error)
-      logError();
-  } else {
-    if (fwrite(&value, 1, 1, context.stream) < 1) {
-      if (!context.error)
-        logError();
-    }
   }
 }
 

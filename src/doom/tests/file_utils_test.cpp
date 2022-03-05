@@ -37,10 +37,10 @@ TEMPLATE_TEST_CASE("Current position updates with reads, writes and seeks",
 
     SaveGame save = [&]() -> SaveGame {
       file.sstream().exceptions(std::ios::failbit);
-      if(mode == OpenMode::Write) {
-        return SaveGame{file, file.writeStream(), false, err_stream};
+      if (mode == OpenMode::Write) {
+        return SaveGame{file.writeStream(), false, err_stream};
       }
-      return SaveGame{file, file.readStream(), false, err_stream};
+      return SaveGame{file.readStream(), false, err_stream};
     }();
 
     THEN("The open mode is correctly detected") {
@@ -85,7 +85,7 @@ SCENARIO("Writing/Reading a line string") {
   std::stringstream err_os;
   GIVEN("A writable file") {
     FileStream<512> fileW{{}, OpenMode::Write};
-    SaveGame saveW{fileW, fileW.writeStream(), false, err_os};
+    SaveGame saveW{fileW.writeStream(), false, err_os};
 
     WHEN("Writing out a string") {
       static constexpr std::string_view text{"test\n"};
@@ -98,7 +98,7 @@ SCENARIO("Writing/Reading a line string") {
 
       GIVEN("A readable fileW") {
         FileStream fileR{OpenMode::Read, fileW.sstream()};
-        SaveGame saveR{fileR, fileR.readStream(), false, err_os};
+        SaveGame saveR{fileR.readStream(), false, err_os};
 
         WHEN("Reading a line") {
           std::array<char, 260> buffer{};
@@ -139,7 +139,7 @@ SCENARIO("Open file checking") {
   GIVEN("An open file") {
     FileStream<2> fileStream{{}, OpenMode::Read};
     std::stringstream err_os;
-    SaveGame save{fileStream, fileStream.readStream(), false, err_os};
+    SaveGame save{fileStream.readStream(), false, err_os};
     THEN("File is opened") { CHECK(save.isOpen()); }
   }
 }
