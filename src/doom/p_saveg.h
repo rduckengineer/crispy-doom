@@ -76,11 +76,8 @@ void open_savegame_for_read(const char* filename);
 boolean has_savegame_open_failed();
 boolean is_file_opened(FILE* file);
 long current_position();
-long current_position_for_file(FILE* file);
 void close_savegame();
 
-void seek_from_start_in_file(FILE* file, long offset);
-void seek_from_end_in_file(FILE* file, long offset);
 void seek_from_start(long offset);
 void seek_from_end(long offset);
 #endif

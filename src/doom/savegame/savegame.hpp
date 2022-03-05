@@ -5,7 +5,10 @@
 extern "C" {
 #include "doomtype.h"
 #include "p_saveg.h"
+#include "fcntl.h"
 }
+
+#include "savegame/open_mode.hpp"
 
 #include <iostream>
 
@@ -27,7 +30,7 @@ class SaveGame
 {
 public:
   explicit SaveGame(FILE *stream, bool initial_error, std::ostream &err_os)
-      : m_has_error(initial_error)
+    : m_has_error(initial_error)
     , m_context{stream, m_has_error, err_os}
   {}
 
@@ -44,11 +47,15 @@ public:
       saveg_write16_from_context(m_context, value);
     } else if constexpr (sizeof(T) == 4) {
       saveg_write32_from_context(m_context, value);
+    } else if constexpr (std::is_same_v<T, char const*>) {
+      fputs(value, m_context.stream);
+    } else {
+      throw std::runtime_error("not implemented!");
     }
   }
 
   template <typename T>
-  T read()
+  [[nodiscard]] T read()
   {
     if constexpr (sizeof(T) == 1) {
       return saveg_read8_from_context(m_context);
@@ -59,7 +66,18 @@ public:
     }
   }
 
+  bool readInto(char* buffer) {
+    static constexpr size_t MAX_LINE_LENGTH = 260;
+    return fgets(buffer, MAX_LINE_LENGTH, m_context.stream) != nullptr;
+  }
+
+  [[nodiscard]] bool isOpen() const noexcept { return m_context.stream != nullptr; }
   [[nodiscard]] bool error() const noexcept { return m_context.error; }
+
+  long currentPosition() const { return ftell(m_context.stream); }
+
+  void seekFromStart(long offset) { fseek(m_context.stream, offset, SEEK_SET); }
+  void seekFromEnd(long offset) { fseek(m_context.stream, offset, SEEK_END); }
 
 private:
   bool m_has_error = false;

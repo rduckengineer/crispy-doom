@@ -23,7 +23,8 @@ SaveGameContext production_context() {
   };
   return context;
 }
-constexpr int MAX_LINE_LEN = 260;
+
+SaveGame prod_savegame() { return SaveGame{production_context()}; }
 
 extern "C" {
 
@@ -36,7 +37,6 @@ void saveg_write16(int16_t value) { prod_savegame().write<int16_t>(value); }
 int32_t saveg_read32(void) { return prod_savegame().read<int32_t>(); }
 void saveg_write32(int32_t value) { prod_savegame().write<int32_t>(value); }
 
-
 void open_savegame_for_write(const char* filename) {
   save_stream = fopen(filename, "wb");
 }
@@ -47,65 +47,47 @@ void open_savegame_for_read(const char* filename) {
 
 void reset_savegame_error() { production_context().error = false; }
 
-boolean has_savegame_open_failed() {
-  return static_cast<boolean>(!is_file_opened(production_context().stream));
-}
-boolean is_file_opened(FILE* file) {
-  return static_cast<boolean>(file != nullptr);
-}
-
-long current_position_for_file(FILE* file) {
-  return ftell(file);
-}
-
-long current_position()
-{
-  return current_position_for_file(production_context().stream);
-}
-
 void close_savegame()
 {
   fclose(save_stream);
 }
 
+boolean has_savegame_open_failed() {
+  return static_cast<boolean>(!prod_savegame().isOpen());
+}
+
+
+long current_position()
+{
+  return prod_savegame().currentPosition();
+}
+
 void write_in_stream(const char* content) {
-  fputs(content, save_stream);
+  prod_savegame().write(content);
 }
 
 char *read_line(char *line_) {
-  return fgets(line_, MAX_LINE_LEN, save_stream);
+  if(prod_savegame().readInto(line_))
+    return line_;
+  return nullptr;
 }
 
 size_t read_one_byte(byte *curbyte) {
-  return fread(curbyte, 1, 1, save_stream);
-}
-
-
-void seek_in_file(long offset, int whence) {
-  fseek(save_stream, offset, whence);
-}
-
-void seek_from_start_in_file(FILE* file, long offset) {
-  fseek(file, offset, SEEK_SET);
+  auto saveg = prod_savegame();
+  *curbyte = prod_savegame().read<int8_t>();
+  if(saveg.error())
+    throw std::runtime_error("Couldn't read one byte!");
+  return 1;
 }
 
 void seek_from_start(long offset) {
-  seek_from_start_in_file(production_context().stream, offset);
-}
-
-
-void seek_from_end_in_file(FILE* file, long offset) {
-  fseek(file, offset, SEEK_END);
+  prod_savegame().seekFromStart(offset);
 }
 
 void seek_from_end(long offset) {
-  seek_from_end_in_file(production_context().stream, offset);
+  prod_savegame().seekFromEnd(offset);
 }
 }
-
-
-
-SaveGame prod_savegame() { return SaveGame{production_context()}; }
 }
 
 byte saveg_read8_from_context(SaveGameContext context)
@@ -175,5 +157,3 @@ void  saveg_write32_from_context(SaveGameContext context, int32_t value)
   saveg_write8_from_context(context, (value >> 16) & 0xff);
   saveg_write8_from_context(context, (value >> 24) & 0xff);
 }
-
-
