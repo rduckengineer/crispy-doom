@@ -6,28 +6,23 @@ extern "C" {
 }
 #include <memory>
 #include <fstream>
+#include <iostream>
 
 
 namespace {
 bool savegame_error;
 
-std::unique_ptr<std::istream> read_save_file{};
-std::unique_ptr<std::ostream> write_save_file{};
+std::fstream file_{};
+SaveGameContext::FileVariant save_file;
 
 SaveGameContext production_context() {
-  SaveGameContext context {
-      .error = savegame_error,
-      .err_os = std::cerr,
-      .read_file = read_save_file.get(),
-      .write_file = write_save_file.get(),
-  };
-  return context;
+  return {savegame_error, std::cerr, save_file};
 }
 
 SaveGame prod_savegame() { return SaveGame{production_context()}; }
 
 extern "C" {
-void reset_savegame_error() { production_context().error = false; }
+void reset_savegame_error() { production_context().resetError(); }
 
 // Read / Write for regular savegame
 byte saveg_read8(void) { return prod_savegame().read<byte>(); }
@@ -42,11 +37,13 @@ void saveg_write32(int32_t value) { prod_savegame().write<int32_t>(value); }
 
 // Open / Close
 void open_savegame_for_write(const char* filename) {
-  write_save_file = std::make_unique<std::ofstream>(filename, std::ios::out | std::ios::binary);
+  file_.open(filename, std::ios::out | std::ios::binary);
+  save_file = static_cast<std::ostream*>(&file_);
 }
 
 void open_savegame_for_read(const char* filename) {
-  read_save_file = std::make_unique<std::ifstream>(filename, std::ios::in | std::ios::binary);
+  file_.open(filename, std::ios::in | std::ios::binary);
+  save_file = static_cast<std::istream*>(&file_);
 }
 
 boolean has_savegame_open_failed() {
@@ -55,8 +52,8 @@ boolean has_savegame_open_failed() {
 
 void close_savegame()
 {
-  read_save_file.reset();
-  write_save_file.reset();
+  file_.close();
+  save_file = std::monostate{};
 }
 
 // Position

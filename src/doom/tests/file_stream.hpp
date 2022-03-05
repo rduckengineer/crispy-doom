@@ -25,8 +25,8 @@ struct FileStream {
   {}
 
   [[nodiscard]] constexpr size_t size() const { return m_buf.size(); }
-  [[nodiscard]] std::istream& readStream() { return m_stream; }
-  [[nodiscard]] std::ostream& writeStream() { return m_stream; }
+  [[nodiscard]] std::istream* readStream() { return &m_stream; }
+  [[nodiscard]] std::ostream* writeStream() { return &m_stream; }
   [[nodiscard]] std::stringstream& sstream() { return m_stream; }
 
   template <typename T>

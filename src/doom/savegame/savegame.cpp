@@ -1,94 +1,103 @@
 #include "savegame.hpp"
 
-#include <limits>
 #include <cstring>
+#include <iostream>
 
 OpenMode SaveGame::openMode() const {
-  assert(m_context.read_file || m_context.write_file);
-  return m_context.read_file ? OpenMode::Read : OpenMode::Write;
+  return doOnFile<OpenMode>(
+    [](std::istream*) { return OpenMode::Read; },
+    [](std::ostream*) { return OpenMode::Write; }
+  );
 }
 
 bool SaveGame::stream_error() const noexcept {
-  if(m_context.read_file)
-    return m_context.read_file->fail();
-  else if(m_context.write_file)
-    return m_context.write_file->fail();
-  return true;
+  return doOnFile<bool>([](auto const& stream) {
+    return stream->fail();
+  });
 }
 
 bool SaveGame::readInto(char *buffer) {
   static constexpr size_t MAX_LINE_LENGTH = 260;
-  auto* file = m_context.read_file;
-  assert(file);
-  file->getline(buffer, MAX_LINE_LENGTH);
+  auto& file = m_context.read();
 
-  if(file->fail())
-    m_context.read_file->clear();
+  file.getline(buffer, MAX_LINE_LENGTH);
 
-  auto count = m_context.read_file->gcount();
-  return count != 0 && count != std::numeric_limits<std::streamsize>::max();
+  bool done = file.fail();
+  // We do read until the end of the file, but EOF triggers a failbit which
+  // triggers fails on subsequent reads...
+  file.clear();
+
+  return !done;
 }
 
 long SaveGame::currentPosition() const noexcept {
-  assert(m_context.read_file || m_context.write_file);
-  if(m_context.read_file)
-    return m_context.read_file->tellg();
-  else
-    return m_context.write_file->tellp();
+  using pos_type = std::ostream::pos_type;
+
+  return doOnFile<pos_type>(
+    [](std::ostream* write){ return write->tellp(); },
+    [](std::istream* read){ return read->tellg(); }
+  );
 }
 
 void SaveGame::seekFromStart(long offset) {
-  assert(m_context.read_file || m_context.write_file);
-  if(m_context.read_file)
-    m_context.read_file->seekg(offset, std::ios::beg);
-  else if(m_context.write_file)
-    m_context.write_file->seekp(offset, std::ios::beg);
+  doOnFile(
+    [offset](std::ostream* w){ w->seekp(offset, std::ios::beg); },
+    [offset](std::istream*r){ r->seekg(offset, std::ios::beg); }
+  );
 }
 
 void SaveGame::seekFromEnd(long offset) {
-  assert(m_context.read_file || m_context.write_file);
-  if (m_context.read_file)
-    m_context.read_file->seekg(offset, std::ios::end);
-  else if (m_context.write_file)
-    m_context.write_file->seekp(offset, std::ios::end);
+  doOnFile(
+      [offset](std::ostream* w){ w->seekp(offset, std::ios::end); },
+      [offset](std::istream* r){ r->seekg(offset, std::ios::end); }
+  );
 }
 
-byte SaveGame::read8()
-{
-  assert(m_context.read_file);
-  return static_cast<byte>(m_context.read_file->get());
+uint8_t SaveGame::read8() {
+  return static_cast<uint8_t>(m_context.read().get());
 }
 
-void SaveGame::write8(byte value) {
-  assert(m_context.write_file);
-  m_context.write_file->put(static_cast<char>(value));
+void SaveGame::write8(uint8_t value) {
+  m_context.write().put(static_cast<char>(value));
 }
 
-int16_t SaveGame::read16()
-{
-  int16_t result = read8();
-  return static_cast<int16_t>(result | read8() << 8);
+uint16_t SaveGame::read16() {
+  auto result = static_cast<uint16_t>(read8());
+  return static_cast<uint16_t>(result | read8() << 8);
 }
 
-void SaveGame::write16(int16_t value)
-{
+void SaveGame::write16(uint16_t value) {
   write8(value & 0xff);
   write8((value >> 8) & 0xff);
 }
 
-
-int32_t SaveGame::read32()
-{
-  int32_t result = read8();
+uint32_t SaveGame::read32() {
+  uint32_t result = read8();
   result |= read8() << 8;
   result |= read8() << 16;
   return result | read8() << 24;
 }
 
-void SaveGame::write32(int32_t value)
-{
+void SaveGame::write32(uint32_t value) {
   write8(value & 0xff);
   write8((value >> 8) & 0xff);
   write8((value >> 16) & 0xff);
   write8((value >> 24) & 0xff);
+}
+
+void SaveGame::logOnError(std::string_view error_message) {
+  if(stream_error())
+    m_context.logError(error_message);
+}
+
+template <typename R, typename ... Visitor>
+R SaveGame::doOnFile(Visitor&& ... v) const
+{
+  return std::visit(checked_overload<R>(std::forward<Visitor>(v)...), m_context.file());
+}
+
+// SaveGameContext logging
+void SaveGameContext::logError(std::string_view err_msg) {
+  m_error = true;
+  err_os << err_msg;
 }

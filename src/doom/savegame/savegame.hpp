@@ -1,44 +1,20 @@
 #ifndef CRISPY_DOOM_SAVEGAME_HPP
 #define CRISPY_DOOM_SAVEGAME_HPP
 
+#include "savegame_context.hpp"
 
-extern "C" {
-#include "doomtype.h"
-#include "p_saveg.h"
-}
-
+#include "savegame/on_exit.hpp"
 #include "savegame/open_mode.hpp"
-
-#include <iostream>
-#include <cassert>
-
-struct SaveGameContext
-{
-  bool& error;
-  std::ostream& err_os;
-  std::istream* read_file;
-  std::ostream* write_file;
-};
+#include "savegame/overload.hpp"
 
 class SaveGame
 {
-  template <typename Callable>
-  struct onExit{
-    Callable fn;
-    onExit(Callable&& fn_) : fn(std::move(fn_)) {}
-    ~onExit() { fn(); }
-  };
-
 public:
-  explicit SaveGame(std::istream &is, bool initial_error, std::ostream &err_os)
-      : m_has_error(initial_error)
-      , m_context{m_has_error, err_os, &is, nullptr}
-  {}
-
-  explicit SaveGame(std::ostream &os, bool initial_error, std::ostream &err_os)
-      : m_has_error(initial_error)
-        , m_context{m_has_error, err_os, nullptr, &os}
-  {}
+  SaveGame(SaveGameContext::FileVariant file, bool initialError, std::ostream& err_os)
+    : m_has_error(initialError)
+    , m_context{m_has_error, err_os, file}
+  {
+  }
 
   explicit SaveGame(SaveGameContext context)
     : m_context(context)
@@ -46,25 +22,22 @@ public:
 
   [[nodiscard]] OpenMode openMode() const;
   [[nodiscard]] bool isOpen() const noexcept {
-    return m_context.read_file || m_context.write_file;
+    return !std::holds_alternative<std::monostate>(m_context.file());
   }
-  [[nodiscard]] bool error() const noexcept { return m_context.error; }
+  [[nodiscard]] bool error() const noexcept { return m_context.hasError(); }
   [[nodiscard]] bool stream_error() const noexcept;
   [[nodiscard]] long currentPosition() const noexcept;
 
-  void seekFromStart(long offset);
-  void seekFromEnd(long offset);
+  void seekFromStart(long r);
+  void seekFromEnd(long r);
 
   bool readInto(char* buffer);
+
   template <typename T>
   [[nodiscard]] T read()
   {
-    [[maybe_unused]] onExit ex{[this](){
-      if(m_context.read_file->fail()) {
-        m_context.err_os << "saveg_read8: Unexpected end of file while "
-                          "reading save game\n";
-        m_context.error = true;
-      }
+    [[maybe_unused]] onExit ex{[this](){logOnError(
+        "saveg_read8: Unexpected end of file while reading save game\n");
     }};
 
     if constexpr (sizeof(T) == 1) {
@@ -80,11 +53,8 @@ public:
   void write(T value)
   {
     [[maybe_unused]] onExit ex { [this]() {
-      if (m_context.write_file->fail()) {
-        m_context.err_os << "saveg_write8: Error while writing save game\n";
-        m_context.error = true;
-      }
-    }};
+      logOnError("saveg_write8: Error while writing save game\n"); }
+    };
 
     if constexpr (sizeof(T) == 1) {
       write8(value);
@@ -93,21 +63,23 @@ public:
     } else if constexpr (sizeof(T) == 4) {
       write32(value);
     } else if constexpr (std::is_same_v<T, char const*>) {
-      assert(m_context.write_file);
-      *m_context.write_file << value;
-    } else {
-      throw std::runtime_error("not implemented!");
+      m_context.write() << value;
     }
   }
 
 private:
-  byte read8();
-  int16_t read16();
-  int32_t read32();
+  uint8_t read8();
+  uint16_t read16();
+  uint32_t read32();
 
-  void write8(byte value);
-  void write16(int16_t value);
-  void write32(int32_t value);
+  void write8(uint8_t value);
+  void write16(uint16_t value);
+  void write32(uint32_t value);
+
+  void logOnError(std::string_view error_message);
+
+  template <typename R = void, typename ... Visitor>
+  R doOnFile(Visitor&& ... v) const;
 
 private:
   bool m_has_error = false;

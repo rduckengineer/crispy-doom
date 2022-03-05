@@ -27,7 +27,6 @@ TEMPLATE_TEST_CASE("Current position updates with reads, writes and seeks",
   std::stringstream err_stream;
   using initBuffer = std::array<byte, 10>;
 
-
   GIVEN("A writable empty file") {
     initBuffer initialContent = initBuffer{1, 1, 1, 1, 0};
     auto mode = GENERATE(OpenMode::Read, OpenMode::Write);
@@ -125,12 +124,7 @@ SCENARIO("Writing/Reading a line string") {
 SCENARIO("Open file checking") {
   GIVEN("No file") {
     std::stringstream err_os;
-    bool err = false;
-    SaveGameContext context{
-        .error = err,
-        .err_os = err_os,
-    };
-    SaveGame save{context};
+    SaveGame save{std::monostate{}, false, err_os};
     THEN("File is not opened") { CHECK_FALSE(save.isOpen()); }
   }
 
