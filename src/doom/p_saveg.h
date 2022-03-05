@@ -59,8 +59,6 @@ void P_ArchiveSpecials (void);
 void P_UnArchiveSpecials (void);
 void P_RestoreTargets (void);
 
-extern FILE *save_stream;
-
 void reset_savegame_error();
 
 // Endian-safe integer read/write functions
@@ -74,10 +72,13 @@ void saveg_write32(int32_t value);
 void open_savegame_for_write(const char* filename);
 void open_savegame_for_read(const char* filename);
 boolean has_savegame_open_failed();
-boolean is_file_opened(FILE* file);
-long current_position();
 void close_savegame();
 
+long current_position();
 void seek_from_start(long offset);
 void seek_from_end(long offset);
+
+void write_in_stream(const char* content);
+boolean read_one_byte(byte *curbyte);
+boolean read_line(char *line_);
 #endif

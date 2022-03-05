@@ -545,7 +545,7 @@ void find_ext_start_and_process_first_pass(long endpos) {
 
     seek_from_start(p);
 
-    if (read_one_byte(&curbyte) < 1)
+    if (!read_one_byte(&curbyte))
     {
       break;
     }
